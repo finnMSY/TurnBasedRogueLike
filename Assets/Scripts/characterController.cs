@@ -13,9 +13,32 @@ public class characterController : MonoBehaviour {
     private bool facingLeft = true;
     [SerializeField]
     public GameObject attack;
+    public GameObject directionPoints;
+    private GameObject attackObject;
+    private GameObject attackRangeObject;
+
 
     void Start() {
         movePoint.parent = null; 
+    }
+
+    Transform findNearestPointPos()
+    {
+        GameObject closestPoint = null;  
+        float lowestDistance = float.MaxValue;  
+
+        foreach (Transform point in directionPoints.transform) 
+        {
+            float distance = Vector2.Distance(Camera.main.ScreenToWorldPoint(Input.mousePosition), point.position);
+
+            if (distance < lowestDistance) 
+            {
+                lowestDistance = distance;
+                closestPoint = point.gameObject;
+            }
+        }
+
+        return closestPoint.transform;
     }
 
     void Update() {
@@ -41,22 +64,47 @@ public class characterController : MonoBehaviour {
             }
         }
 
-        if (Input.GetButtonUp("Attack")) {
-            Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            mousePos.z = 0; // Set z to zero if working in 2D, adjust as needed for 3D
+        Transform nearestPoint = null;
 
-            // Calculate the direction from the player to the mouse
-            Vector3 direction = (mousePos - transform.position).normalized;
+        if (Input.GetButtonDown("Attack")) {
+            attack.GetComponent<animationController>().isAttacking(false);
+            
+            nearestPoint = findNearestPointPos();
+            Vector3 direction = (nearestPoint.position - transform.position).normalized;
 
-            // Calculate the angle and add 90 degrees offset
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + 135f;
             if (!facingLeft) {
                 angle -= 90f;
             }
             Quaternion rotation = Quaternion.Euler(new Vector3(0, 0, angle));
-            Instantiate(attack, transform.position, Quaternion.identity * rotation, transform);
+            attackObject = Instantiate(attack, transform.position, Quaternion.identity * rotation, transform);
+
+            GameObject prefab = Resources.Load<GameObject>("AttackRanges/" + nearestPoint.name);
+            attackRangeObject = Instantiate(prefab, nearestPoint.position, Quaternion.identity, transform);
+        }
+
+        if (Input.GetButton("Attack")) {
+            Transform newNearestPoint = findNearestPointPos();
+
+            if (newNearestPoint != nearestPoint) {
+                nearestPoint = newNearestPoint;
+
+                if (attackRangeObject != null) {
+                    Destroy(attackRangeObject);
+                }
+
+                GameObject newPrefab = Resources.Load<GameObject>("AttackRanges/" + nearestPoint.name);
+                attackRangeObject = Instantiate(newPrefab, nearestPoint.position, Quaternion.identity, transform);
+            }
+        }
+
+        if (Input.GetButtonUp("Attack")) {
+            Destroy(attackRangeObject);
+            attackObject.GetComponent<animationController>().isAttacking(true);
         }
     }
+
+
 
     private void Move(Vector3 direction) {
         Vector3 newPosition = movePoint.position + direction;

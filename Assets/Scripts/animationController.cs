@@ -4,13 +4,14 @@ using UnityEngine;
 
 public class animationController : MonoBehaviour
 {
-    // Start is called before the first frame update
+    Animator animator;
+    public SpriteRenderer spriteRenderer;
+
     void Start()
     {
-        
+        animator = GetComponent<Animator>();
     }
 
-    // Update is called once per frame
     void Update()
     {
         
@@ -18,5 +19,10 @@ public class animationController : MonoBehaviour
 
     public void destroySelf() {
         Destroy(gameObject);
+    }
+
+    public void isAttacking(bool decision) {
+        spriteRenderer.enabled = decision;
+        animator.enabled = decision;
     }
 }
