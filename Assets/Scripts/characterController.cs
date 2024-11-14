@@ -18,23 +18,20 @@ public class characterController : MonoBehaviour {
     private GameObject attackRangeObject;
     private Transform nearestPoint = null;
     bool isAiming = false;
-
+    bool canAim = true;
 
     void Start() {
         movePoint.parent = null; 
     }
 
-    Transform findNearestPointPos()
-    {
+    Transform findNearestPointPos() {
         GameObject closestPoint = null;  
         float lowestDistance = float.MaxValue;  
 
-        foreach (Transform point in directionPoints.transform) 
-        {
+        foreach (Transform point in directionPoints.transform) {
             float distance = Vector2.Distance(Camera.main.ScreenToWorldPoint(Input.mousePosition), point.position);
 
-            if (distance < lowestDistance) 
-            {
+            if (distance < lowestDistance) {
                 lowestDistance = distance;
                 closestPoint = point.gameObject;
             }
@@ -45,6 +42,9 @@ public class characterController : MonoBehaviour {
 
     public void stopAiming(bool decision) {
         isAiming = decision;
+        if (!decision && attackRangeObject != null) {
+            Destroy(attackRangeObject);
+        }
     }
 
     float Round2F(float point_y) {
@@ -75,7 +75,11 @@ public class characterController : MonoBehaviour {
             }
         }
 
-        if (Input.GetButton("Attack")) {
+        if (Input.GetButtonDown("Attack")) {
+            canAim = true;
+        }
+
+        if (Input.GetButton("Attack") && canAim) {
             isAiming = true;
             nearestPoint = findNearestPointPos();
 
@@ -85,10 +89,9 @@ public class characterController : MonoBehaviour {
 
             GameObject newPrefab = Resources.Load<GameObject>("AttackRanges/" + nearestPoint.name);
             attackRangeObject = Instantiate(newPrefab, new Vector2(nearestPoint.position.x, Round2F(nearestPoint.position.y)), Quaternion.identity, transform);
-            
         }
 
-        if (Input.GetButtonUp("Attack")) {
+        if (Input.GetButtonUp("Attack") && isAiming) {
             Vector3 direction = (nearestPoint.position - transform.position).normalized;
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + 135f;
             if (!facingLeft) {
@@ -99,10 +102,15 @@ public class characterController : MonoBehaviour {
 
             Destroy(attackRangeObject);
             attackObject.GetComponent<animationController>().isAttacking(true);
+            isAiming = false; 
+        }
+
+        if (Input.GetButtonDown("Cancel")) {
+            stopAiming(false);
+            Destroy(attackRangeObject);
+            canAim = false;
         }
     }
-
-
 
     private void Move(Vector3 direction) {
         Vector3 newPosition = movePoint.position + direction;
