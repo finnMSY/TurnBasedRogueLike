@@ -4,12 +4,13 @@ using UnityEngine;
 
 public class animationController : MonoBehaviour
 {
-    Animator animator;
+    public Animator animator;
     public SpriteRenderer spriteRenderer;
+    public characterController characterController;
 
     void Start()
     {
-        animator = GetComponent<Animator>();
+        // animator = GetComponent<Animator>();
     }
 
     void Update()
@@ -19,6 +20,7 @@ public class animationController : MonoBehaviour
 
     public void destroySelf() {
         Destroy(gameObject);
+        gameObject.transform.parent.GetComponent<characterController>().stopAiming(false);
     }
 
     public void isAttacking(bool decision) {

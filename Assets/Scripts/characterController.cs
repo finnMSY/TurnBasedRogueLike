@@ -16,6 +16,8 @@ public class characterController : MonoBehaviour {
     public GameObject directionPoints;
     private GameObject attackObject;
     private GameObject attackRangeObject;
+    private Transform nearestPoint = null;
+    bool isAiming = false;
 
 
     void Start() {
@@ -41,12 +43,21 @@ public class characterController : MonoBehaviour {
         return closestPoint.transform;
     }
 
+    public void stopAiming(bool decision) {
+        isAiming = decision;
+    }
+
+    float Round2F(float point_y) {
+        float rounded_y = Mathf.Round(point_y * 2f) / 2f;
+        return rounded_y;
+    }
+
     void Update() {
         float movementAmount = speed * Time.deltaTime;
         transform.position = Vector3.MoveTowards(transform.position, movePoint.position, movementAmount);
 
         if (Vector3.Distance(transform.position, movePoint.position) <= 0.05f) {
-            if (Input.GetButtonDown("Horizontal")) {
+            if (Input.GetButtonDown("Horizontal") && !isAiming) {
                 float horizontalInput = Input.GetAxisRaw("Horizontal");
 
                 if (horizontalInput > 0 && facingLeft) {
@@ -58,20 +69,27 @@ public class characterController : MonoBehaviour {
 
                 Move(new Vector3(horizontalInput * moveDistance, 0, 0));
             }
-            else if (Input.GetButtonDown("Vertical")) {
+            else if (Input.GetButtonDown("Vertical") && !isAiming) {
                 float verticalInput = Input.GetAxisRaw("Vertical");
                 Move(new Vector3(0, verticalInput * moveDistance, 0));
             }
         }
 
-        Transform nearestPoint = null;
-
-        if (Input.GetButtonDown("Attack")) {
-            attack.GetComponent<animationController>().isAttacking(false);
-            
+        if (Input.GetButton("Attack")) {
+            isAiming = true;
             nearestPoint = findNearestPointPos();
-            Vector3 direction = (nearestPoint.position - transform.position).normalized;
 
+            if (attackRangeObject != null) {
+                Destroy(attackRangeObject);
+            }
+
+            GameObject newPrefab = Resources.Load<GameObject>("AttackRanges/" + nearestPoint.name);
+            attackRangeObject = Instantiate(newPrefab, new Vector2(nearestPoint.position.x, Round2F(nearestPoint.position.y)), Quaternion.identity, transform);
+            
+        }
+
+        if (Input.GetButtonUp("Attack")) {
+            Vector3 direction = (nearestPoint.position - transform.position).normalized;
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + 135f;
             if (!facingLeft) {
                 angle -= 90f;
@@ -79,26 +97,6 @@ public class characterController : MonoBehaviour {
             Quaternion rotation = Quaternion.Euler(new Vector3(0, 0, angle));
             attackObject = Instantiate(attack, transform.position, Quaternion.identity * rotation, transform);
 
-            GameObject prefab = Resources.Load<GameObject>("AttackRanges/" + nearestPoint.name);
-            attackRangeObject = Instantiate(prefab, nearestPoint.position, Quaternion.identity, transform);
-        }
-
-        if (Input.GetButton("Attack")) {
-            Transform newNearestPoint = findNearestPointPos();
-
-            if (newNearestPoint != nearestPoint) {
-                nearestPoint = newNearestPoint;
-
-                if (attackRangeObject != null) {
-                    Destroy(attackRangeObject);
-                }
-
-                GameObject newPrefab = Resources.Load<GameObject>("AttackRanges/" + nearestPoint.name);
-                attackRangeObject = Instantiate(newPrefab, nearestPoint.position, Quaternion.identity, transform);
-            }
-        }
-
-        if (Input.GetButtonUp("Attack")) {
             Destroy(attackRangeObject);
             attackObject.GetComponent<animationController>().isAttacking(true);
         }
