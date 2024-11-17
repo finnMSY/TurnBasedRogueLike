@@ -1,5 +1,17 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+
+public class Movement 
+{
+  public Vector3 position;
+  public Movement previousMovement;
+
+  public Movement(Vector3 position, Movement previousMovement = null) {
+        this.position = position;
+        this.previousMovement = previousMovement;
+    }
+}
 
 public class characterController : MonoBehaviour {
     [SerializeField]
@@ -19,9 +31,16 @@ public class characterController : MonoBehaviour {
     private Transform nearestPoint = null;
     bool isAiming = false;
     bool canAim = true;
+    public int actionsPerMovement = 1;
+    public int actionsPerAttack;
+
+    public turnController turnController;
+    private Movement currentMovement;
+    private bool myTurn = true;
 
     void Start() {
         movePoint.parent = null; 
+        currentMovement = new Movement(transform.position, null);
     }
 
     Transform findNearestPointPos() {
@@ -53,6 +72,7 @@ public class characterController : MonoBehaviour {
     }
 
     void Update() {
+        actionsPerAttack = Mathf.Max(turnController.remainingActions, 1);
         float movementAmount = speed * Time.deltaTime;
         transform.position = Vector3.MoveTowards(transform.position, movePoint.position, movementAmount);
 
@@ -92,17 +112,28 @@ public class characterController : MonoBehaviour {
         }
 
         if (Input.GetButtonUp("Attack") && isAiming) {
-            Vector3 direction = (nearestPoint.position - transform.position).normalized;
-            float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + 135f;
-            if (!facingLeft) {
-                angle -= 90f;
-            }
-            Quaternion rotation = Quaternion.Euler(new Vector3(0, 0, angle));
-            attackObject = Instantiate(attack, transform.position, Quaternion.identity * rotation, transform);
+            if (turnController.canUseAction(actionsPerAttack)) {
+                Vector3 direction = (nearestPoint.position - transform.position).normalized;
+                float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + 135f;
+                if (!facingLeft) {
+                    angle -= 90f;
+                }
+                Quaternion rotation = Quaternion.Euler(new Vector3(0, 0, angle));
+                attackObject = Instantiate(attack, transform.position, Quaternion.identity * rotation, transform);
 
+                turnController.useAction(actionsPerAttack);
+                attackObject.GetComponent<animationController>().isAttacking(true);
+                isAiming = false;
+
+                if (turnController.remainingActions == 0) {
+                    endOfTurn();
+                }
+            }
+            else {
+                endOfTurn();
+            } 
             Destroy(attackRangeObject);
-            attackObject.GetComponent<animationController>().isAttacking(true);
-            isAiming = false; 
+
         }
 
         if (Input.GetButtonDown("Cancel")) {
@@ -114,15 +145,41 @@ public class characterController : MonoBehaviour {
 
     private void Move(Vector3 direction) {
         Vector3 newPosition = movePoint.position + direction;
-        if (!Physics2D.OverlapCircle(newPosition, 0.2f, obstacleMask)) {
-            movePoint.position = newPosition;
+        if (currentMovement.previousMovement == null || currentMovement.previousMovement.position != newPosition) {
+            if (turnController.canUseAction(actionsPerMovement)) {
+                Movement newMovement = new Movement(newPosition, currentMovement);
+                currentMovement = newMovement;
+                turnController.useAction(actionsPerMovement);
+
+                if (!Physics2D.OverlapCircle(newPosition, 0.2f, obstacleMask)) {
+                    movePoint.position = newPosition;
+                }
+            }
+            else {
+                endOfTurn(); 
+            }
         }
+        else if (myTurn) {
+            turnController.giveAction(actionsPerMovement);
+            currentMovement = currentMovement.previousMovement;
+
+            if (!Physics2D.OverlapCircle(newPosition, 0.2f, obstacleMask)) {
+                movePoint.position = newPosition;
+            }
+        }
+    }
+    
+    private void endOfTurn() {
+        myTurn = false;
+        Debug.Log("End of Turn");
     }
 
     private void Flip() {
-        facingLeft = !facingLeft;
-        Vector3 theScale = transform.localScale;
-        theScale.x *= -1;
-        transform.localScale = theScale;
+        if (turnController.canUseAction(actionsPerMovement)) {
+            facingLeft = !facingLeft;
+            Vector3 theScale = transform.localScale;
+            theScale.x *= -1;
+            transform.localScale = theScale;
+        }
     }
 }
