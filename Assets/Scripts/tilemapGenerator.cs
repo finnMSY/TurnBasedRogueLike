@@ -10,9 +10,13 @@ public class tilemapGenerator : MonoBehaviour
     public List<Tile> allTiles = new List<Tile>();
     public bool tilesOccupied;
 
+    public void removeTile(Vector3Int pos) {
+        Debug.Log(pos);
+        tilemap.SetTile(pos, null);
+    }
+
     // Start is called before the first frame update
     void Start() {
-
         bounds = tilemap.cellBounds;
 
         TileBase[] tiles = tilemap.GetTilesBlock(bounds);
@@ -37,7 +41,6 @@ public class tilemapGenerator : MonoBehaviour
 
     // Update is called once per frame
     public List<Tile> getTiles() {   
-        Debug.Log(allTiles);
         return (allTiles);
     }
 }

@@ -19,6 +19,7 @@ public class characterController : MonoBehaviour {
     [SerializeField]
     private Transform movePoint;
     [SerializeField]
+    public tilemapGenerator gen;
     private LayerMask obstacleMask;
     [SerializeField]
     public float moveDistance = 1.5f;
@@ -39,8 +40,30 @@ public class characterController : MonoBehaviour {
     private bool myTurn = true;
 
     void Start() {
+        Debug.Log(findTilePos(transform.position));
         movePoint.parent = null; 
         currentMovement = new Movement(transform.position, null);
+    }
+
+    int CustomRound(float value) {
+        if (value < 0) {
+            if (value % 1 < -0.5f)
+                return Mathf.FloorToInt(value);  
+            else
+                return Mathf.CeilToInt(value);  
+        }
+        else {
+            if (value % 1 >= 0.5f)
+                return Mathf.FloorToInt(value);  
+            else
+                return Mathf.CeilToInt(value);  
+        }
+    }
+
+    Vector3Int findTilePos(Vector2 pos) {
+        int x = CustomRound(pos.x);
+        int y = Mathf.FloorToInt(pos.y + 1f);
+        return new Vector3Int(x, y, 0);
     }
 
     Transform findNearestPointPos() {
@@ -153,6 +176,7 @@ public class characterController : MonoBehaviour {
 
                 if (!Physics2D.OverlapCircle(newPosition, 0.2f, obstacleMask)) {
                     movePoint.position = newPosition;
+                    Debug.Log(findTilePos(newPosition));
                 }
             }
             else {

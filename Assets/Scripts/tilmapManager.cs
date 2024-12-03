@@ -39,7 +39,7 @@ public class tilemapManager : MonoBehaviour
         return(totalTiles);
     }
 
-    Tile FindTile(Vector3Int position) {
+    public Tile FindTile(Vector3Int position) {
         foreach (Tile tile in totalTiles) {
             if (tile.position == position) {
                 return (tile);
