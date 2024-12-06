@@ -10,6 +10,7 @@ public class turnController : MonoBehaviour
     
     [HideInInspector]
     public int remainingActions; 
+    bool playersTurn = true;
 
     // Start is called before the first frame update
     void Start()
@@ -23,6 +24,26 @@ public class turnController : MonoBehaviour
     {
         if (actionCounter.text != remainingActions.ToString() && remainingActions >= 0) {
             actionCounter.text = remainingActions.ToString();
+        }
+    }
+
+    public void endOfTurn() {
+        if (playersTurn) {
+            playersTurn = false;
+            List<GameObject> enemies = new List<GameObject>(GameObject.FindGameObjectsWithTag("Enemy"));
+            foreach (GameObject enemy in enemies) {
+                enemyController enemyController = enemy.GetComponent<enemyController>();
+                if (enemyController != null) {
+                    enemyController.startTurn();
+                } else {
+                    Debug.LogWarning($"Enemy {enemy.name} does not have an EnemyController component.");
+                }
+            }
+        } else {
+            playersTurn = true;
+            characterController player = GameObject.FindGameObjectWithTag("Player").transform.GetComponent<characterController>();
+            remainingActions = maxActions;
+            player.startTurn();
         }
     }
 

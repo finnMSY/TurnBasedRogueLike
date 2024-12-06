@@ -19,7 +19,8 @@ public class characterController : MonoBehaviour {
     [SerializeField]
     private Transform movePoint;
     [SerializeField]
-    public tilemapGenerator gen;
+    public tilemapManager tilemapManager;
+    [SerializeField]
     private LayerMask obstacleMask;
     [SerializeField]
     public float moveDistance = 1.5f;
@@ -38,11 +39,17 @@ public class characterController : MonoBehaviour {
     public turnController turnController;
     private Movement currentMovement;
     private bool myTurn = true;
+    public Tile currentTile;
 
     void Start() {
-        Debug.Log(findTilePos(transform.position));
+        currentTile = tilemapManager.FindTile(new Vector3Int(-3, -4, 0));
         movePoint.parent = null; 
         currentMovement = new Movement(transform.position, null);
+    }
+
+    public void startTurn() {
+        Debug.Log("~~~~~~~~~~~~~~~~~~~~~~~~~");
+        Debug.Log("YOUR TURN");
     }
 
     int CustomRound(float value) {
@@ -166,6 +173,23 @@ public class characterController : MonoBehaviour {
         }
     }
 
+    void setCurrentTile(Tile currentTile, Vector3 direction) {
+        if (direction.x == 0) {
+            if (direction.y > 0) {
+                this.currentTile = tilemapManager.FindTile(new Vector3Int(currentTile.position.x, currentTile.position.y + 1));
+            }
+            else {
+                this.currentTile = tilemapManager.FindTile(new Vector3Int(currentTile.position.x, currentTile.position.y - 1));
+            }
+        }
+        else if (direction.x > 0) {
+            this.currentTile = tilemapManager.FindTile(new Vector3Int(currentTile.position.x + 1, currentTile.position.y));
+        }
+        else {
+            this.currentTile = tilemapManager.FindTile(new Vector3Int(currentTile.position.x - 1, currentTile.position.y));
+        }
+    }
+
     private void Move(Vector3 direction) {
         Vector3 newPosition = movePoint.position + direction;
         if (currentMovement.previousMovement == null || currentMovement.previousMovement.position != newPosition) {
@@ -176,7 +200,7 @@ public class characterController : MonoBehaviour {
 
                 if (!Physics2D.OverlapCircle(newPosition, 0.2f, obstacleMask)) {
                     movePoint.position = newPosition;
-                    Debug.Log(findTilePos(newPosition));
+                    setCurrentTile(currentTile, direction);
                 }
             }
             else {
@@ -189,13 +213,14 @@ public class characterController : MonoBehaviour {
 
             if (!Physics2D.OverlapCircle(newPosition, 0.2f, obstacleMask)) {
                 movePoint.position = newPosition;
+                setCurrentTile(currentTile, direction);
             }
         }
     }
     
     private void endOfTurn() {
         myTurn = false;
-        Debug.Log("End of Turn");
+        turnController.endOfTurn();
     }
 
     private void Flip() {

@@ -8,12 +8,16 @@ public class tilemapManager : MonoBehaviour
     public List<tilemapGenerator> tilemapGenerators;
 
     public List<Tile> totalTiles = new List<Tile>();
+    public GameObject enemies;
+    public GameObject players;
 
     void Start() {
         foreach (tilemapGenerator gen in tilemapGenerators) {
             totalTiles.AddRange(gen.getTiles());
         }   
         AddNeighbours(totalTiles);
+        players.SetActive(true);
+        enemies.SetActive(true);
     }
 
     void AddNeighbours(List<Tile> tiles) {
