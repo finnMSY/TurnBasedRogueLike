@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -48,6 +49,8 @@ public class characterController : MonoBehaviour {
     }
 
     public void startTurn() {
+        myTurn = true;
+        currentMovement = new Movement(transform.position, null);
         Debug.Log("~~~~~~~~~~~~~~~~~~~~~~~~~");
         Debug.Log("YOUR TURN");
     }
@@ -190,13 +193,37 @@ public class characterController : MonoBehaviour {
         }
     }
 
+    bool isNewTileOccupied(Tile currentTile, Vector3 direction) {
+        Tile newTile;
+        if (direction.x == 0) {
+            if (direction.y > 0) {
+                newTile = tilemapManager.FindTile(new Vector3Int(currentTile.position.x, currentTile.position.y + 1));
+            }
+            else {
+                newTile = tilemapManager.FindTile(new Vector3Int(currentTile.position.x, currentTile.position.y - 1));
+            }
+        }
+        else if (direction.x > 0) {
+            newTile = tilemapManager.FindTile(new Vector3Int(currentTile.position.x + 1, currentTile.position.y));
+        }
+        else {
+            newTile = tilemapManager.FindTile(new Vector3Int(currentTile.position.x - 1, currentTile.position.y));
+        }
+
+        return newTile.occupied;
+    }
+
     private void Move(Vector3 direction) {
         Vector3 newPosition = movePoint.position + direction;
+        
         if (currentMovement.previousMovement == null || currentMovement.previousMovement.position != newPosition) {
             if (turnController.canUseAction(actionsPerMovement)) {
-                Movement newMovement = new Movement(newPosition, currentMovement);
-                currentMovement = newMovement;
-                turnController.useAction(actionsPerMovement);
+
+                if (!isNewTileOccupied(currentTile, direction)) {
+                    Movement newMovement = new Movement(newPosition, currentMovement);
+                    currentMovement = newMovement;
+                    turnController.useAction(actionsPerMovement);
+                }
 
                 if (!Physics2D.OverlapCircle(newPosition, 0.2f, obstacleMask)) {
                     movePoint.position = newPosition;
