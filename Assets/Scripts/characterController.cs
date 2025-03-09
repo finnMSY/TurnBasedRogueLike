@@ -37,7 +37,7 @@ public class characterController : MonoBehaviour {
     public int actionsPerMovement = 1;
     public int actionsPerAttack;
 
-    public turnController turnController;
+    public gameController turnController;
     private Movement currentMovement;
     private bool myTurn = true;
     public Tile currentTile;
@@ -51,8 +51,6 @@ public class characterController : MonoBehaviour {
     public void startTurn() {
         myTurn = true;
         currentMovement = new Movement(transform.position, null);
-        Debug.Log("~~~~~~~~~~~~~~~~~~~~~~~~~");
-        Debug.Log("YOUR TURN");
     }
 
     int CustomRound(float value) {
@@ -128,6 +126,10 @@ public class characterController : MonoBehaviour {
             }
         }
 
+        if (Input.GetButtonDown("Submit")) {
+            endOfTurn();
+        }
+
         if (Input.GetButtonDown("Attack")) {
             canAim = true;
         }
@@ -159,11 +161,13 @@ public class characterController : MonoBehaviour {
                 isAiming = false;
 
                 if (turnController.remainingActions == 0) {
-                    endOfTurn();
+                    //endOfTurn();
+                    Debug.Log("Out of Actions");
                 }
             }
             else {
-                endOfTurn();
+                // endOfTurn();
+                Debug.Log("Out of Actions");
             } 
             Destroy(attackRangeObject);
 
@@ -231,7 +235,8 @@ public class characterController : MonoBehaviour {
                 }
             }
             else {
-                endOfTurn(); 
+                // endOfTurn();
+                Debug.Log("Out of Actions"); 
             }
         }
         else if (myTurn) {

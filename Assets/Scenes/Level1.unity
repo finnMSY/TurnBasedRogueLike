@@ -2229,6 +2229,15 @@ MonoBehaviour:
   maxActions: 3
   actionCounter: {fileID: 1121750867}
   remainingActions: 0
+  moveSets:
+  - enemyType: 2
+    moves:
+    - name: Fire Ball
+      damage: 3
+    - name: Ice Blast
+      damage: 4
+    - name: Tornado
+      damage: 10
 --- !u!4 &336715127
 Transform:
   m_ObjectHideFlags: 0
@@ -2262,7 +2271,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &342388237
 Transform:
   m_ObjectHideFlags: 0
@@ -2794,7 +2803,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &707297106
 Transform:
   m_ObjectHideFlags: 0
@@ -3169,6 +3178,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4483080298295112634, guid: a59944655902ee9449352a4f5553854f, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4483080298295112634, guid: a59944655902ee9449352a4f5553854f, type: 3}
       propertyPath: tilemapManager
       value: 
       objectReference: {fileID: 314800759}
@@ -3182,7 +3195,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6561162389689379994, guid: a59944655902ee9449352a4f5553854f, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6561162389689379994, guid: a59944655902ee9449352a4f5553854f, type: 3}
       propertyPath: m_TagString
@@ -4373,16 +4386,18 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1969088034}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a845fb0236df042e3894fbb62031faca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tileManager: {fileID: 314800759}
   numActions: 3
-  turnController: {fileID: 336715126}
-  movePoint: {fileID: 1764899561}
+  enemyType: 2
   speed: 5
+  damageMultiplyer: 1
+  moveSet:
+  - Fire Ball
+  - Ice Blast
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
-public class turnController : MonoBehaviour
+public class gameController : MonoBehaviour
 {
     public int maxActions = 3;
     public TextMeshProUGUI actionCounter;
@@ -11,15 +11,14 @@ public class turnController : MonoBehaviour
     [HideInInspector]
     public int remainingActions; 
     bool playersTurn = true;
+    public List<MoveSet> moveSets = new List<MoveSet>();
 
-    // Start is called before the first frame update
     void Start()
     {
         remainingActions = maxActions;
         actionCounter.text = remainingActions.ToString();
     }
 
-    // Update is called once per frame
     void Update()
     {
         if (actionCounter.text != remainingActions.ToString() && remainingActions >= 0) {

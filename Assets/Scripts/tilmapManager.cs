@@ -16,8 +16,11 @@ public class tilemapManager : MonoBehaviour
             totalTiles.AddRange(gen.getTiles());
         }   
         AddNeighbours(totalTiles);
-        players.SetActive(true);
-        enemies.SetActive(true);
+        players.GetComponent<characterController>().enabled = true;
+
+        foreach(Transform child in enemies.transform) {
+            child.GetComponent<enemyController>().enabled = true;
+        }
     }
 
     void AddNeighbours(List<Tile> tiles) {

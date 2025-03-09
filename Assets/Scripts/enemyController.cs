@@ -1,43 +1,85 @@
 using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
 public class enemyController : MonoBehaviour {
-    public tilemapManager tileManager;
-    public int numActions;
-    List<Tile> totalTiles = new List<Tile>();
-    GameObject playerObject;
-    public turnController turnController;
-    Dictionary<Tile, int> tileActionPoints;
 
-    Tile currentTile;
-    [SerializeField]
+    private tilemapManager tileManager;
+    public int numActions;
+    private List<Tile> totalTiles = new List<Tile>();
+    private GameObject playerObject;
+    private gameController turnController;
+    private Dictionary<Tile, int> tileActionPoints;
+    
+    [HideInInspector]
+    public EnemyType enemyType;
+    public float speed = 5;
+    public double damageMultiplyer = 1;
+
+    [HideInInspector]
+    public List<string> moveSet = new List<string>();
+
+    private Tile currentTile;
     private Transform movePoint;
-    [SerializeField]
-    private float speed = 5;
 
     public void Start() {
+        movePoint = transform.Find("movePoint").transform;
+        tileManager = FindObjectOfType<tilemapManager>();
+        turnController = FindObjectOfType<gameController>();
         this.currentTile = tileManager.FindTile(new Vector3Int(3, 2, 0));
         movePoint.parent = null;
+    }
+
+    public List<string> GetMovesForEnemyType(EnemyType type) {
+        turnController = FindObjectOfType<gameController>();
+        List<string> moves = new List<string>();
+        
+        foreach (MoveSet set in turnController.moveSets) {
+            if (set.enemyType == type) {
+                foreach (Ability ab in set.moves) {
+                    moves.Add(ab.name);
+                }
+                break; 
+            }
+        }
+
+        return moves; // Return the list of moves
     }
 
     public void startTurn() {
         tileActionPoints = new Dictionary<Tile, int>(); 
         playerObject = GameObject.FindGameObjectWithTag("Player");
+
         List<Tile> quickestPath = findQuickestPath(currentTile, playerObject.GetComponent<characterController>().currentTile);
         List<Tile> totalMoveableTiles = findTotalMoveableTiles(currentTile, numActions);
+
+        assignPoints(tileActionPoints, quickestPath, totalMoveableTiles);
+        StartCoroutine(moveEnemyRoutine());
+    }
+
+    void assignPoints(Dictionary<Tile, int> tileActionPoints, List<Tile> quickestPath, List<Tile >totalMoveableTiles) {
         for(int i = 0; i < quickestPath.Count; i++) {
             tileActionPoints.Add(quickestPath[i], i);
         }
+
+        // In range to cause damage: get a point per potenial damage dealt
+
         foreach(Tile t in totalMoveableTiles) {
             if (!tileActionPoints.ContainsKey(t)) {
                 tileActionPoints.Add(t, 0);
             }
         }
-        
-        for (int i = 0; i < numActions; i++) {
-            moveEnemy(currentTile);
+    }
+
+    IEnumerator moveEnemyRoutine()
+    {
+        for (int i = 0; i < numActions; i++)
+        {
+            moveEnemy();
+            yield return new WaitForSeconds(.4f);   
         }
+
         turnController.endOfTurn();
     }
 
@@ -64,20 +106,22 @@ public class enemyController : MonoBehaviour {
         return totalMoveableTiles;    
     }
 
-    void moveEnemy(Tile currentTile) {
-        var highestPointTile = (currentTile, tileActionPoints[currentTile]);
-        foreach (Tile neighbouringTile in currentTile.neighbours) {
-            if (!neighbouringTile.occupied) {
-                int tilePoints = tileActionPoints[neighbouringTile];
-                if (tilePoints > highestPointTile.Item2) {
-                    highestPointTile = (neighbouringTile, tilePoints);
-                }
+   void moveEnemy()
+    {
+        var bestTile = (currentTile, tileActionPoints[currentTile]);
+
+        foreach (Tile neighbour in currentTile.neighbours)
+        {
+            if (!neighbour.occupied && tileActionPoints.TryGetValue(neighbour, out int points) && points > bestTile.Item2)
+            {
+                bestTile = (neighbour, points);
             }
         }
-        Debug.Log(highestPointTile);
-        if (moveGameObject(this.currentTile, highestPointTile.Item1)) {
-            this.currentTile = highestPointTile.Item1;
-            Debug.Log(this.currentTile.position);
+
+        if (moveGameObject(currentTile, bestTile.Item1))
+        {
+            currentTile = bestTile.Item1;
+            // Debug.Log($"Enemy moved to: {currentTile.position}");
         }
     }
 
