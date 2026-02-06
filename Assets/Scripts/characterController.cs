@@ -1,4 +1,3 @@
-
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -50,6 +49,7 @@ public class characterController : MonoBehaviour {
 
     public void startTurn() {
         myTurn = true;
+        attack.GetComponent<animationController>().decreaseCooldown();
         currentMovement = new Movement(transform.position, null);
     }
 
@@ -103,80 +103,98 @@ public class characterController : MonoBehaviour {
     }
 
     void Update() {
-        actionsPerAttack = Mathf.Max(turnController.remainingActions, 1);
-        float movementAmount = speed * Time.deltaTime;
-        transform.position = Vector3.MoveTowards(transform.position, movePoint.position, movementAmount);
+        if (myTurn) {
+            actionsPerAttack = Mathf.Max(turnController.remainingActions, 1);
+            float movementAmount = speed * Time.deltaTime;
+            transform.position = Vector3.MoveTowards(transform.position, movePoint.position, movementAmount);
 
-        if (Vector3.Distance(transform.position, movePoint.position) <= 0.05f) {
-            if (Input.GetButtonDown("Horizontal") && !isAiming) {
-                float horizontalInput = Input.GetAxisRaw("Horizontal");
+            if (Vector3.Distance(transform.position, movePoint.position) <= 0.05f) {
+                if (Input.GetButtonDown("Horizontal") && !isAiming) {
+                    float horizontalInput = Input.GetAxisRaw("Horizontal");
 
-                if (horizontalInput > 0 && facingLeft) {
-                    Flip();
+                    if (horizontalInput > 0 && facingLeft) {
+                        Flip();
+                    }
+                    else if (horizontalInput < 0 && !facingLeft) {
+                        Flip();
+                    }
+
+                    Move(new Vector3(horizontalInput * moveDistance, 0, 0));
                 }
-                else if (horizontalInput < 0 && !facingLeft) {
-                    Flip();
+                else if (Input.GetButtonDown("Vertical") && !isAiming) {
+                    float verticalInput = Input.GetAxisRaw("Vertical");
+                    Move(new Vector3(0, verticalInput * moveDistance, 0));
                 }
-
-                Move(new Vector3(horizontalInput * moveDistance, 0, 0));
-            }
-            else if (Input.GetButtonDown("Vertical") && !isAiming) {
-                float verticalInput = Input.GetAxisRaw("Vertical");
-                Move(new Vector3(0, verticalInput * moveDistance, 0));
-            }
-        }
-
-        if (Input.GetButtonDown("Submit")) {
-            endOfTurn();
-        }
-
-        if (Input.GetButtonDown("Attack")) {
-            canAim = true;
-        }
-
-        if (Input.GetButton("Attack") && canAim) {
-            isAiming = true;
-            nearestPoint = findNearestPointPos();
-
-            if (attackRangeObject != null) {
-                Destroy(attackRangeObject);
             }
 
-            GameObject newPrefab = Resources.Load<GameObject>("AttackRanges/" + nearestPoint.name);
-            attackRangeObject = Instantiate(newPrefab, new Vector2(nearestPoint.position.x, Round2F(nearestPoint.position.y)), Quaternion.identity, transform);
-        }
+            if (Input.GetButtonDown("Submit")) {
+                endOfTurn();
+            }
 
-        if (Input.GetButtonUp("Attack") && isAiming) {
-            if (turnController.canUseAction(actionsPerAttack)) {
-                Vector3 direction = (nearestPoint.position - transform.position).normalized;
-                float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + 135f;
-                if (!facingLeft) {
-                    angle -= 90f;
+            if (Input.GetButtonDown("Attack")) {
+                canAim = true;
+            }
+
+            if (Input.GetButton("Attack") && canAim) {
+                isAiming = true;
+                nearestPoint = findNearestPointPos();
+
+                if (attackRangeObject != null) {
+                    Destroy(attackRangeObject);
                 }
-                Quaternion rotation = Quaternion.Euler(new Vector3(0, 0, angle));
-                attackObject = Instantiate(attack, transform.position, Quaternion.identity * rotation, transform);
 
-                turnController.useAction(actionsPerAttack);
-                attackObject.GetComponent<animationController>().isAttacking(true);
-                isAiming = false;
+                GameObject newPrefab = Resources.Load<GameObject>("AttackRanges/" + nearestPoint.name);
+                attackRangeObject = Instantiate(newPrefab, new Vector2(nearestPoint.position.x, Round2F(nearestPoint.position.y)), Quaternion.identity, transform);
+            }
 
-                if (turnController.remainingActions == 0) {
-                    //endOfTurn();
+            if (Input.GetButtonUp("Attack") && isAiming) {
+                if (turnController.canUseAction(actionsPerAttack)) {
+                    Attack();
+                }
+                else {
+                    endOfTurn();
                     Debug.Log("Out of Actions");
                 }
+                Destroy(attackRangeObject);
+
             }
-            else {
-                // endOfTurn();
-                Debug.Log("Out of Actions");
-            } 
-            Destroy(attackRangeObject);
 
+            if (Input.GetButtonDown("Cancel")) {
+                stopAiming(false);
+                Destroy(attackRangeObject);
+                canAim = false;
+            }
         }
+    }
 
-        if (Input.GetButtonDown("Cancel")) {
-            stopAiming(false);
-            Destroy(attackRangeObject);
-            canAim = false;
+    void Attack()
+    {
+        Debug.Log(attack.GetComponent<animationController>().getCurrentCooldown());
+        if (attack.GetComponent<animationController>().getCurrentCooldown() == 0)
+        {
+            Vector3 direction = (nearestPoint.position - transform.position).normalized;
+            float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + 135f;
+            if (!facingLeft)
+            {
+                angle -= 90f;
+            }
+            Quaternion rotation = Quaternion.Euler(new Vector3(0, 0, angle));
+            attackObject = Instantiate(attack, transform.position, Quaternion.identity * rotation, transform);
+
+            turnController.useAction(actionsPerAttack);
+            attackObject.GetComponent<animationController>().isAttacking(true);
+            isAiming = false;
+
+            if (turnController.remainingActions == 0)
+            {
+                endOfTurn();
+                Debug.Log("Out of Actions");
+            }
+        }
+        else
+        {
+            isAiming = false;
+            Debug.Log("Attack is on cooldown");
         }
     }
 
@@ -235,7 +253,7 @@ public class characterController : MonoBehaviour {
                 }
             }
             else {
-                // endOfTurn();
+                endOfTurn();
                 Debug.Log("Out of Actions"); 
             }
         }

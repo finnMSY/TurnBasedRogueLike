@@ -16,6 +16,7 @@ public class enemyController : MonoBehaviour {
     public EnemyType enemyType;
     public float speed = 5;
     public double damageMultiplyer = 1;
+    public int health = 100;
 
     [HideInInspector]
     public List<string> moveSet = new List<string>();
@@ -47,8 +48,14 @@ public class enemyController : MonoBehaviour {
         return moves; // Return the list of moves
     }
 
-    public void startTurn() {
-        tileActionPoints = new Dictionary<Tile, int>(); 
+    public void takeDamage(int damage)
+    {
+        health -= damage;
+    }
+
+    public void startTurn()
+    {
+        tileActionPoints = new Dictionary<Tile, int>();
         playerObject = GameObject.FindGameObjectWithTag("Player");
 
         List<Tile> quickestPath = findQuickestPath(currentTile, playerObject.GetComponent<characterController>().currentTile);

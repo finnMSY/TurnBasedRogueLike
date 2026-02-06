@@ -14,7 +14,7 @@ public class tilemapManager : MonoBehaviour
     void Start() {
         foreach (tilemapGenerator gen in tilemapGenerators) {
             totalTiles.AddRange(gen.getTiles());
-        }   
+        }
         AddNeighbours(totalTiles);
         players.GetComponent<characterController>().enabled = true;
 
@@ -24,15 +24,17 @@ public class tilemapManager : MonoBehaviour
     }
 
     void AddNeighbours(List<Tile> tiles) {
-        foreach (Tile tile in tiles) {
+        foreach (Tile tile in tiles)
+        {
             List<Tile> neighbours = new List<Tile>();
             Vector3Int position = tile.position;
-            AddNeighbouringTile(new Vector3Int(position.x, position.y+1, position.z), neighbours);
-            AddNeighbouringTile(new Vector3Int(position.x, position.y-1, position.z), neighbours);
-            AddNeighbouringTile(new Vector3Int(position.x+1, position.y, position.z), neighbours);
-            AddNeighbouringTile(new Vector3Int(position.x-1, position.y, position.z), neighbours);
+            AddNeighbouringTile(new Vector3Int(position.x, position.y + 1, position.z), neighbours);
+            AddNeighbouringTile(new Vector3Int(position.x, position.y - 1, position.z), neighbours);
+            AddNeighbouringTile(new Vector3Int(position.x + 1, position.y, position.z), neighbours);
+            AddNeighbouringTile(new Vector3Int(position.x - 1, position.y, position.z), neighbours);
             tile.setNeighbours(neighbours);
         }
+        
     }
 
     void AddNeighbouringTile(Vector3Int position, List<Tile> neighbours) { 
@@ -47,11 +49,13 @@ public class tilemapManager : MonoBehaviour
     }
 
     public Tile FindTile(Vector3Int position) {
-        foreach (Tile tile in totalTiles) {
-            if (tile.position == position) {
-                return (tile);
+        foreach (Tile tile in totalTiles)
+        {
+            if (tile.position == position)
+            {
+                return tile;
             }
         }
-        return(null);
+        return null;
     }
 }
