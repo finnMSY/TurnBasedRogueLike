@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.IO;
+
 
 [System.Serializable]
 public class MoveSet {
@@ -12,6 +14,7 @@ public class MoveSet {
 public class Ability {
     public string name;
     public int damage;
+    public TextAsset range;
 }
 
 public enum EnemyType { 

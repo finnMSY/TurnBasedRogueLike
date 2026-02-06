@@ -2,6 +2,10 @@ using UnityEngine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Newtonsoft.Json; 
+using System.Linq;
+using Newtonsoft.Json.Linq;
+
 
 public class enemyController : MonoBehaviour {
 
@@ -11,8 +15,7 @@ public class enemyController : MonoBehaviour {
     private GameObject playerObject;
     private gameController turnController;
     private Dictionary<Tile, int> tileActionPoints;
-    
-    [HideInInspector]
+    private Dictionary<Ability, int> abilityActionPoints;
     public EnemyType enemyType;
     public float speed = 5;
     public double damageMultiplyer = 1;
@@ -20,7 +23,7 @@ public class enemyController : MonoBehaviour {
 
     [HideInInspector]
     public List<string> moveSet = new List<string>();
-
+ 
     private Tile currentTile;
     private Transform movePoint;
 
@@ -32,14 +35,32 @@ public class enemyController : MonoBehaviour {
         movePoint.parent = null;
     }
 
-    public List<string> GetMovesForEnemyType(EnemyType type) {
+    public (KeyValuePair<Tile, int>? dict, Tile key) GetHighestTileDictionary()
+    {
+        if (tileActionPoints.Count == 0) 
+            return (null, null);
+        
+        var maxPair = tileActionPoints.OrderByDescending(x => x.Value).First();
+        return (maxPair, maxPair.Key);
+    }
+
+    public (KeyValuePair<Ability, int>? dict, Ability key) GetHighestAbilityDictionary()
+    {
+        if (abilityActionPoints.Count == 0) 
+            return (null, null);
+        
+        var maxPair = abilityActionPoints.OrderByDescending(x => x.Value).First();
+        return (maxPair, maxPair.Key);
+    }
+
+    public List<Ability> GetMovesForEnemyType(EnemyType type) {
         turnController = FindObjectOfType<gameController>();
-        List<string> moves = new List<string>();
+        List<Ability> moves = new List<Ability>();
         
         foreach (MoveSet set in turnController.moveSets) {
             if (set.enemyType == type) {
                 foreach (Ability ab in set.moves) {
-                    moves.Add(ab.name);
+                    moves.Add(ab);
                 }
                 break; 
             }
@@ -53,24 +74,81 @@ public class enemyController : MonoBehaviour {
         health -= damage;
     }
 
+    private void attack_or_move()
+    {
+        // Get both results
+        var (tileDict, tileKey) = GetHighestTileDictionary();
+        var (abilityDict, abilityKey) = GetHighestAbilityDictionary();
+        
+        // Get the values for comparison
+        int tileValue = tileKey != null ? tileActionPoints[tileKey] : 0;
+        int abilityValue = abilityKey != null ? abilityActionPoints[abilityKey] : 0;
+        
+
+        if (tileValue > abilityValue)
+        {
+            StartCoroutine(moveEnemyRoutine());
+        }
+        else
+        {
+            // Use ability logic here
+            Debug.Log($"Use {abilityKey.name} for {abilityValue} damage.");
+        }
+    }
+
     public void startTurn()
     {
         tileActionPoints = new Dictionary<Tile, int>();
+        abilityActionPoints = new Dictionary<Ability, int>();
         playerObject = GameObject.FindGameObjectWithTag("Player");
 
         List<Tile> quickestPath = findQuickestPath(currentTile, playerObject.GetComponent<characterController>().currentTile);
         List<Tile> totalMoveableTiles = findTotalMoveableTiles(currentTile, numActions);
 
         assignPoints(tileActionPoints, quickestPath, totalMoveableTiles);
-        StartCoroutine(moveEnemyRoutine());
+        attack_or_move();
+
+        turnController.endOfTurn();
     }
 
     void assignPoints(Dictionary<Tile, int> tileActionPoints, List<Tile> quickestPath, List<Tile >totalMoveableTiles) {
-        for(int i = 0; i < quickestPath.Count; i++) {
+        int startIndex = Mathf.Max(0, quickestPath.Count - numActions);
+        for(int i = startIndex; i < quickestPath.Count; i++) {
             tileActionPoints.Add(quickestPath[i], i);
         }
 
         // In range to cause damage: get a point per potenial damage dealt
+        var moveSet = GetMovesForEnemyType(enemyType);
+
+        foreach (Ability a in moveSet)
+        {
+            int damage = a.damage;
+            Dictionary<string, object> range = JsonConvert.DeserializeObject<Dictionary<string, object>>(a.range.text);
+            JArray tilesArray = JArray.Parse(range["tiles"].ToString());
+            
+            foreach (JObject tile in tilesArray)
+            {
+                int x = (int)tile["x"];
+                int y = (int)tile["y"];
+                
+                // Convert relative coordinates to world position
+                Vector3Int targetPos = new Vector3Int(
+                    currentTile.position.x + x,
+                    currentTile.position.y + y,
+                    0
+                );
+                
+                Tile targetTile = tileManager.FindTile(targetPos);
+                if (targetTile != null)
+                {
+                    // Add points based on damage
+                    if (tileActionPoints.ContainsKey(targetTile))
+                    {
+                        abilityActionPoints[a] = damage;
+                    }
+                }
+            }
+        }
 
         foreach(Tile t in totalMoveableTiles) {
             if (!tileActionPoints.ContainsKey(t)) {
@@ -86,8 +164,6 @@ public class enemyController : MonoBehaviour {
             moveEnemy();
             yield return new WaitForSeconds(.4f);   
         }
-
-        turnController.endOfTurn();
     }
 
     List<Tile> findTotalMoveableTiles(Tile startingTile, int maxLevels) {
@@ -113,21 +189,23 @@ public class enemyController : MonoBehaviour {
         return totalMoveableTiles;    
     }
 
-   void moveEnemy()
+  void moveEnemy()
     {
-        var bestTile = (currentTile, tileActionPoints[currentTile]);
+        // Find the tile with highest score anywhere
+        Tile targetTile = tileActionPoints.OrderByDescending(kv => kv.Value).First().Key;
 
-        foreach (Tile neighbour in currentTile.neighbours)
-        {
-            if (!neighbour.occupied && tileActionPoints.TryGetValue(neighbour, out int points) && points > bestTile.Item2)
-            {
-                bestTile = (neighbour, points);
-            }
-        }
+        if (targetTile == currentTile) return; // Already on the best tile
 
-        if (moveGameObject(currentTile, bestTile.Item1))
+        // Find quickest path to that tile
+        List<Tile> path = findQuickestPath(currentTile, targetTile);
+
+        if (path == null || path.Count < 2) return; // No movement possible
+
+        Tile nextTile = path[1]; // The next step along the path
+
+        if (moveGameObject(currentTile, nextTile))
         {
-            currentTile = bestTile.Item1;
+            currentTile = nextTile;
             // Debug.Log($"Enemy moved to: {currentTile.position}");
         }
     }

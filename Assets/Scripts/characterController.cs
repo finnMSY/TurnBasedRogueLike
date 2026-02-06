@@ -45,12 +45,14 @@ public class characterController : MonoBehaviour {
         currentTile = tilemapManager.FindTile(new Vector3Int(-3, -4, 0));
         movePoint.parent = null; 
         currentMovement = new Movement(transform.position, null);
+        attack.GetComponent<animationController>().setCurrentCooldown(0);
     }
 
     public void startTurn() {
         myTurn = true;
         attack.GetComponent<animationController>().decreaseCooldown();
         currentMovement = new Movement(transform.position, null);
+        Debug.Log(attack.GetComponent<animationController>().getCurrentCooldown());
     }
 
     int CustomRound(float value) {
@@ -182,6 +184,7 @@ public class characterController : MonoBehaviour {
             attackObject = Instantiate(attack, transform.position, Quaternion.identity * rotation, transform);
 
             turnController.useAction(actionsPerAttack);
+            attack.GetComponent<animationController>().startCooldown();
             attackObject.GetComponent<animationController>().isAttacking(true);
             isAiming = false;
 

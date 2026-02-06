@@ -14,7 +14,8 @@ public class animationController : MonoBehaviour
 
     void Start()
     {
-        // animator = GetComponent<Animator>();
+        // animator = GetComponent<Animator>();\
+        current_cooldown = 0;
     }
 
     void Update()
@@ -27,6 +28,11 @@ public class animationController : MonoBehaviour
         return current_cooldown;
     }
 
+    public void setCurrentCooldown(int value)
+    {
+        current_cooldown = value;
+    }
+
     public void destroySelf()
     {
         Destroy(gameObject);
@@ -36,7 +42,7 @@ public class animationController : MonoBehaviour
     public void isAttacking(bool decision)
     {
         spriteRenderer.enabled = decision;
-        animator.enabled = decision;
+        animator.enabled = decision;        
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -47,9 +53,20 @@ public class animationController : MonoBehaviour
         }
     }
 
+    public void startCooldown()
+    {
+        current_cooldown = attack_cooldown + 1;
+    }
+
     public void decreaseCooldown()
     {
-        current_cooldown -= decrease_cooldown_rate;
+        if (current_cooldown > 0) {
+            current_cooldown -= decrease_cooldown_rate;
+        }
+        else
+        {
+            current_cooldown = 0;
+        }
     }
 
 }
