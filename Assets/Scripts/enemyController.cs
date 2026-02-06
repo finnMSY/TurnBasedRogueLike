@@ -11,6 +11,9 @@ public class enemyController : MonoBehaviour {
 
     private tilemapManager tileManager;
     public int numActions;
+    private SpriteRenderer spriteRenderer;
+    public float flashDuration = 0.1f; 
+    private Color originalColor;
     private List<Tile> totalTiles = new List<Tile>();
     private GameObject playerObject;
     private gameController turnController;
@@ -20,6 +23,7 @@ public class enemyController : MonoBehaviour {
     public float speed = 5;
     public double damageMultiplyer = 1;
     public int health = 100;
+    public Vector3Int startingTile = new Vector3Int(3, 2, 0);
 
     [HideInInspector]
     public List<string> moveSet = new List<string>();
@@ -27,12 +31,23 @@ public class enemyController : MonoBehaviour {
     private Tile currentTile;
     private Transform movePoint;
 
-    public void Start() {
+    private void Start() 
+    {
         movePoint = transform.Find("movePoint").transform;
         tileManager = FindObjectOfType<tilemapManager>();
         turnController = FindObjectOfType<gameController>();
-        this.currentTile = tileManager.FindTile(new Vector3Int(3, 2, 0));
+        playerObject = GameObject.FindGameObjectWithTag("Player");
+        this.currentTile = tileManager.FindTile(startingTile);
         movePoint.parent = null;
+
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        originalColor = spriteRenderer.color;
+        
+        // Mark starting tile as occupied
+        if (currentTile != null)
+        {
+            currentTile.occupied = true;
+        }
     }
 
     public (KeyValuePair<Tile, int>? dict, Tile key) GetHighestTileDictionary()
@@ -54,7 +69,6 @@ public class enemyController : MonoBehaviour {
     }
 
     public List<Ability> GetMovesForEnemyType(EnemyType type) {
-        turnController = FindObjectOfType<gameController>();
         List<Ability> moves = new List<Ability>();
         
         foreach (MoveSet set in turnController.moveSets) {
@@ -66,65 +80,137 @@ public class enemyController : MonoBehaviour {
             }
         }
 
-        return moves; // Return the list of moves
+        return moves;
     }
 
     public void takeDamage(int damage)
     {
+        Debug.Log($"Dealt {damage} damage!");
         health -= damage;
-    }
 
-    private void attack_or_move()
-    {
-        // Get both results
-        var (tileDict, tileKey) = GetHighestTileDictionary();
-        var (abilityDict, abilityKey) = GetHighestAbilityDictionary();
-        
-        // Get the values for comparison
-        int tileValue = tileKey != null ? tileActionPoints[tileKey] : 0;
-        int abilityValue = abilityKey != null ? abilityActionPoints[abilityKey] : 0;
-        
-
-        if (tileValue > abilityValue)
+        if (health <= 0)
         {
-            StartCoroutine(moveEnemyRoutine());
+            die();
         }
         else
         {
-            // Use ability logic here
-            Debug.Log($"Use {abilityKey.name} for {abilityValue} damage.");
+            StartCoroutine(FlashRed());
         }
+    }
+
+    IEnumerator FlashRed() {
+        spriteRenderer.color = Color.red;
+        yield return new WaitForSeconds(flashDuration);
+        spriteRenderer.color = originalColor;
+    }
+
+    void die()
+    {
+        // Free up the tile when enemy dies
+        if (currentTile != null)
+        {
+            currentTile.occupied = false;
+        }
+        Destroy(this.gameObject);
     }
 
     public void startTurn()
     {
+        StartCoroutine(ExecuteTurn());
+    }
+
+    private IEnumerator ExecuteTurn()
+    {        
         tileActionPoints = new Dictionary<Tile, int>();
         abilityActionPoints = new Dictionary<Ability, int>();
-        playerObject = GameObject.FindGameObjectWithTag("Player");
+        
+        if (playerObject == null)
+            playerObject = GameObject.FindGameObjectWithTag("Player");
 
-        List<Tile> quickestPath = findQuickestPath(currentTile, playerObject.GetComponent<characterController>().currentTile);
+        if (playerObject == null)
+        {
+            Debug.LogError("Player object not found!");
+            turnController.endOfTurn();
+            yield break;
+        }
+
+        characterController playerController = playerObject.GetComponent<characterController>();
+        if (playerController == null || playerController.currentTile == null)
+        {
+            Debug.LogError("Player controller or current tile not found!");
+            turnController.endOfTurn();
+            yield break;
+        }
+
+        List<Tile> quickestPath = findQuickestPath(currentTile, playerController.currentTile);
         List<Tile> totalMoveableTiles = findTotalMoveableTiles(currentTile, numActions);
 
-        assignPoints(tileActionPoints, quickestPath, totalMoveableTiles);
-        attack_or_move();
+        assignPoints(quickestPath, totalMoveableTiles);
+        
+        // Wait for movement/attack to complete
+        yield return StartCoroutine(attack_or_move_coroutine());
 
+        // Cleanup
+        if (tileActionPoints != null)
+            tileActionPoints.Clear();
+        if (abilityActionPoints != null)
+            abilityActionPoints.Clear();
+        
+        // Now end turn
         turnController.endOfTurn();
     }
 
-    void assignPoints(Dictionary<Tile, int> tileActionPoints, List<Tile> quickestPath, List<Tile >totalMoveableTiles) {
+    private IEnumerator attack_or_move_coroutine()
+    {
+        var (tileDict, tileKey) = GetHighestTileDictionary();
+        var (abilityDict, abilityKey) = GetHighestAbilityDictionary();
+        
+        int tileValue = tileKey != null ? tileActionPoints[tileKey] : 0;
+        int abilityValue = abilityKey != null ? abilityActionPoints[abilityKey] : 0;
+        
+        if (tileValue > abilityValue)
+        {
+            yield return StartCoroutine(moveEnemyRoutine());
+        }
+        else if (abilityKey != null)
+        {
+            Debug.Log($"Use {abilityKey.name} for {abilityValue} damage.");
+            characterController player = playerObject.GetComponent<characterController>();
+            if (player != null)
+            {
+                player.takeDamage(abilityValue);
+            }
+        }
+    }
+
+    void assignPoints(List<Tile> quickestPath, List<Tile> totalMoveableTiles) 
+    {
+        if (quickestPath == null || playerObject == null) return;
+        
         int startIndex = Mathf.Max(0, quickestPath.Count - numActions);
         for(int i = startIndex; i < quickestPath.Count; i++) {
-            tileActionPoints.Add(quickestPath[i], i);
+            if (!tileActionPoints.ContainsKey(quickestPath[i]))
+            {
+                tileActionPoints.Add(quickestPath[i], i);
+            }
         }
 
-        // In range to cause damage: get a point per potenial damage dealt
+        // In range to cause damage: get a point per potential damage dealt
         var moveSet = GetMovesForEnemyType(enemyType);
+        characterController playerController = playerObject.GetComponent<characterController>();
+        if (playerController == null) return;
+        
+        Tile playerTile = playerController.currentTile;
+        if (playerTile == null) return;
 
         foreach (Ability a in moveSet)
         {
             int damage = a.damage;
             Dictionary<string, object> range = JsonConvert.DeserializeObject<Dictionary<string, object>>(a.range.text);
             JArray tilesArray = JArray.Parse(range["tiles"].ToString());
+            
+            // Check if player is within ability range from current position
+            bool playerInRange = false;
             
             foreach (JObject tile in tilesArray)
             {
@@ -139,20 +225,33 @@ public class enemyController : MonoBehaviour {
                 );
                 
                 Tile targetTile = tileManager.FindTile(targetPos);
-                if (targetTile != null)
+                if (targetTile != null && targetTile == playerTile)
                 {
-                    // Add points based on damage
-                    if (tileActionPoints.ContainsKey(targetTile))
-                    {
-                        abilityActionPoints[a] = damage;
-                    }
+                    playerInRange = true;
+                    break;
+                }
+            }
+            
+            // Assign points if player is in range
+            if (playerInRange)
+            {
+                if (abilityActionPoints.ContainsKey(a))
+                {
+                    abilityActionPoints[a] = Mathf.Max(abilityActionPoints[a], damage);
+                }
+                else
+                {
+                    abilityActionPoints.Add(a, damage);
                 }
             }
         }
 
-        foreach(Tile t in totalMoveableTiles) {
-            if (!tileActionPoints.ContainsKey(t)) {
-                tileActionPoints.Add(t, 0);
+        if (totalMoveableTiles != null)
+        {
+            foreach(Tile t in totalMoveableTiles) {
+                if (!tileActionPoints.ContainsKey(t)) {
+                    tileActionPoints.Add(t, 0);
+                }
             }
         }
     }
@@ -171,26 +270,37 @@ public class enemyController : MonoBehaviour {
 
         Queue<(Tile, int)> bfsQueue = new Queue<(Tile, int)>();
         bfsQueue.Enqueue((startingTile, 0));
+        HashSet<Tile> visited = new HashSet<Tile>();
 
         while (bfsQueue.Count > 0) {
             var currentTuple = bfsQueue.Dequeue();
-            Tile currentTile = currentTuple.Item1;
+            Tile tile = currentTuple.Item1;
             int currentDepth = currentTuple.Item2;
 
-            if (currentDepth <= maxLevels && !totalMoveableTiles.Contains(currentTile) && !currentTile.occupied) {
-                totalMoveableTiles.Add(currentTile);
-                int count = 1;
-                foreach (Tile neighbouringTile in currentTile.neighbours) {
-                    count++;
-                    bfsQueue.Enqueue((neighbouringTile, currentDepth + 1));
+            if (visited.Contains(tile))
+                continue;
+                
+            visited.Add(tile);
+
+            // Allow current tile or unoccupied tiles
+            if (currentDepth <= maxLevels && (tile == startingTile || !tile.occupied)) {
+                totalMoveableTiles.Add(tile);
+                
+                foreach (Tile neighbouringTile in tile.neighbours) {
+                    if (!visited.Contains(neighbouringTile))
+                    {
+                        bfsQueue.Enqueue((neighbouringTile, currentDepth + 1));
+                    }
                 }
             }
         }
         return totalMoveableTiles;    
     }
 
-  void moveEnemy()
+    void moveEnemy()
     {
+        if (tileActionPoints == null || tileActionPoints.Count == 0) return;
+
         // Find the tile with highest score anywhere
         Tile targetTile = tileActionPoints.OrderByDescending(kv => kv.Value).First().Key;
 
@@ -203,18 +313,39 @@ public class enemyController : MonoBehaviour {
 
         Tile nextTile = path[1]; // The next step along the path
 
+        // Check if next tile is occupied
+        if (nextTile.occupied && nextTile != currentTile)
+        {
+            Debug.Log($"Enemy {gameObject.name} can't move - tile occupied");
+            return;
+        }
+
         if (moveGameObject(currentTile, nextTile))
         {
+            // Free previous tile and occupy new tile
+            if (currentTile != null)
+            {
+                currentTile.occupied = false;
+            }
+            
             currentTile = nextTile;
-            // Debug.Log($"Enemy moved to: {currentTile.position}");
+            
+            if (currentTile != null)
+            {
+                currentTile.occupied = true;
+            }
         }
     }
 
     bool moveGameObject(Tile currentTile, Tile newTile) {
-        float moveDistance = playerObject.GetComponent<characterController>().moveDistance;
+        if (playerObject == null) return false;
+        
+        characterController playerController = playerObject.GetComponent<characterController>();
+        if (playerController == null) return false;
+        
+        float moveDistance = playerController.moveDistance;
+        
         if (currentTile != null && newTile != null) {
-            Vector3 direction = Vector3.zero;
-
             if (newTile.position.x > currentTile.position.x) {
                 movePoint.position += new Vector3(moveDistance, 0, 0);
             }
@@ -228,9 +359,7 @@ public class enemyController : MonoBehaviour {
                 movePoint.position += new Vector3(0, -moveDistance, 0); 
             }
 
-            // if (Vector3.Distance(transform.position, movePoint.position) <= 0.05f) {
             return true;
-            // }
         } else {
             Debug.LogError("CurrentTile or NewTile is null");
         } 
@@ -238,6 +367,8 @@ public class enemyController : MonoBehaviour {
     }
 
     List<Tile> findQuickestPath(Tile startingTile, Tile destinationTile) {
+        if (startingTile == null || destinationTile == null) return null;
+        
         Queue<Tile> nodeQueue = new Queue<Tile>();
         HashSet<Tile> visitedTiles = new HashSet<Tile>();
         Dictionary<Tile, Tile> tileParents = new Dictionary<Tile, Tile>();
@@ -257,17 +388,16 @@ public class enemyController : MonoBehaviour {
                     else {
                         tile = null;
                     }
-
                 }
                 while(tile != null);
 
                 path.Reverse();     
                 return(path);
-                
             }
             else {
                 foreach(Tile neighbour in tile.neighbours) {
-                    if (!visitedTiles.Contains(neighbour) && !neighbour.occupied) {
+                    // Allow moving through tiles that are either unoccupied OR the destination
+                    if (!visitedTiles.Contains(neighbour) && (!neighbour.occupied || neighbour == destinationTile)) {
                         tileParents[neighbour] = tile;
                         nodeQueue.Enqueue(neighbour);
                         visitedTiles.Add(neighbour);

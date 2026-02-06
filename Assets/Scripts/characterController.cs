@@ -27,9 +27,15 @@ public class characterController : MonoBehaviour {
     private bool facingLeft = true;
     [SerializeField]
     public GameObject attack;
+
+    private SpriteRenderer spriteRenderer;
+    public float flashDuration = 0.1f; 
+    private Color originalColor;
+
     public GameObject directionPoints;
     private GameObject attackObject;
     private GameObject attackRangeObject;
+    public int health = 100;
     private Transform nearestPoint = null;
     bool isAiming = false;
     bool canAim = true;
@@ -46,10 +52,40 @@ public class characterController : MonoBehaviour {
         movePoint.parent = null; 
         currentMovement = new Movement(transform.position, null);
         attack.GetComponent<animationController>().setCurrentCooldown(0);
+
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        originalColor = spriteRenderer.color;
+    }
+
+    public void takeDamage(int damage)
+    {
+        Debug.Log($"Got hit by {damage} damage!");
+        health -= damage;
+
+        if (health <= 0)
+        {
+            die();
+        }
+        else
+        {
+            StartCoroutine(FlashRed());
+        }
+    }
+
+    IEnumerator FlashRed() {
+        spriteRenderer.color = Color.red; // Change to red
+        yield return new WaitForSeconds(flashDuration); // Wait a tiny bit
+        spriteRenderer.color = originalColor; // Return to original
+    }
+
+    void die()
+    {
+        Destroy(this.gameObject);
     }
 
     public void startTurn() {
         myTurn = true;
+        isAiming = false;
         attack.GetComponent<animationController>().decreaseCooldown();
         currentMovement = new Movement(transform.position, null);
         Debug.Log(attack.GetComponent<animationController>().getCurrentCooldown());
@@ -106,7 +142,7 @@ public class characterController : MonoBehaviour {
 
     void Update() {
         if (myTurn) {
-            actionsPerAttack = Mathf.Max(turnController.remainingActions, 1);
+            // actionsPerAttack = Mathf.Max(turnController.remainingActions, 1);
             float movementAmount = speed * Time.deltaTime;
             transform.position = Vector3.MoveTowards(transform.position, movePoint.position, movementAmount);
 
@@ -150,11 +186,12 @@ public class characterController : MonoBehaviour {
             }
 
             if (Input.GetButtonUp("Attack") && isAiming) {
+                Debug.Log(actionsPerAttack);
                 if (turnController.canUseAction(actionsPerAttack)) {
                     Attack();
                 }
                 else {
-                    endOfTurn();
+                    isAiming = false;
                     Debug.Log("Out of Actions");
                 }
                 Destroy(attackRangeObject);
@@ -171,7 +208,7 @@ public class characterController : MonoBehaviour {
 
     void Attack()
     {
-        Debug.Log(attack.GetComponent<animationController>().getCurrentCooldown());
+        // Debug.Log(attack.GetComponent<animationController>().getCurrentCooldown());
         if (attack.GetComponent<animationController>().getCurrentCooldown() == 0)
         {
             Vector3 direction = (nearestPoint.position - transform.position).normalized;

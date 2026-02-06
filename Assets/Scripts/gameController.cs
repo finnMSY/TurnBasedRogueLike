@@ -12,6 +12,9 @@ public class gameController : MonoBehaviour
     public int remainingActions; 
     bool playersTurn = true;
     public List<MoveSet> moveSets = new List<MoveSet>();
+    
+    private List<enemyController> enemies = new List<enemyController>();
+    private int currentEnemyIndex = 0;
 
     void Start()
     {
@@ -28,21 +31,54 @@ public class gameController : MonoBehaviour
 
     public void endOfTurn() {
         if (playersTurn) {
+            // Player's turn is over, start enemy turns
             playersTurn = false;
-            List<GameObject> enemies = new List<GameObject>(GameObject.FindGameObjectsWithTag("Enemy"));
-            foreach (GameObject enemy in enemies) {
-                enemyController enemyController = enemy.GetComponent<enemyController>();
-                if (enemyController != null) {
-                    enemyController.startTurn();
-                } else {
-                    Debug.LogWarning($"Enemy {enemy.name} does not have an EnemyController component.");
+            
+            // Find all enemies
+            enemies.Clear();
+            GameObject[] enemyObjects = GameObject.FindGameObjectsWithTag("Enemy");
+            foreach (GameObject enemy in enemyObjects) {
+                enemyController ec = enemy.GetComponent<enemyController>();
+                if (ec != null) {
+                    enemies.Add(ec);
                 }
             }
-        } else {
-            playersTurn = true;
-            characterController player = GameObject.FindGameObjectWithTag("Player").transform.GetComponent<characterController>();
+            
+            // Start first enemy's turn
+            currentEnemyIndex = 0;
+            if (enemies.Count > 0) {
+                Debug.Log($"Starting turn for enemy {currentEnemyIndex + 1} of {enemies.Count}");
+                enemies[0].startTurn();
+            } else {
+                // No enemies, go back to player
+                Debug.Log("No enemies found, returning to player turn");
+                startPlayerTurn();
+            }
+        } 
+        else {
+            // An enemy's turn just ended
+            currentEnemyIndex++;
+            
+            if (currentEnemyIndex < enemies.Count) {
+                // Start next enemy's turn
+                Debug.Log($"Starting turn for enemy {currentEnemyIndex + 1} of {enemies.Count}");
+                enemies[currentEnemyIndex].startTurn();
+            } else {
+                // All enemies done, back to player
+                Debug.Log("All enemies finished, returning to player turn");
+                startPlayerTurn();
+            }
+        }
+    }
+
+    private void startPlayerTurn() {
+        playersTurn = true;
+        characterController player = GameObject.FindGameObjectWithTag("Player").GetComponent<characterController>();
+        if (player != null) {
             remainingActions = maxActions;
             player.startTurn();
+        } else {
+            Debug.LogError("Player not found!");
         }
     }
 
