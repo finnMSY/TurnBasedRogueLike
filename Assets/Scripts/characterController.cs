@@ -28,6 +28,8 @@ public class characterController : MonoBehaviour {
     [SerializeField]
     public GameObject attack;
 
+    bool isTurnEnding;
+
     private SpriteRenderer spriteRenderer;
     public float flashDuration = 0.1f; 
     private Color originalColor;
@@ -144,9 +146,14 @@ public class characterController : MonoBehaviour {
         if (myTurn) {
             // actionsPerAttack = Mathf.Max(turnController.remainingActions, 1);
             float movementAmount = speed * Time.deltaTime;
-            transform.position = Vector3.MoveTowards(transform.position, movePoint.position, movementAmount);
+            transform.position = Vector3.MoveTowards(transform.position, movePoint.position, movementAmount); 
 
             if (Vector3.Distance(transform.position, movePoint.position) <= 0.05f) {
+                if (isTurnEnding)
+                {
+                    endOfTurn();
+                }
+
                 if (Input.GetButtonDown("Horizontal") && !isAiming) {
                     float horizontalInput = Input.GetAxisRaw("Horizontal");
 
@@ -166,7 +173,7 @@ public class characterController : MonoBehaviour {
             }
 
             if (Input.GetButtonDown("Submit")) {
-                endOfTurn();
+                isTurnEnding = true;
             }
 
             if (Input.GetButtonDown("Attack")) {
@@ -186,7 +193,6 @@ public class characterController : MonoBehaviour {
             }
 
             if (Input.GetButtonUp("Attack") && isAiming) {
-                Debug.Log(actionsPerAttack);
                 if (turnController.canUseAction(actionsPerAttack)) {
                     Attack();
                 }
@@ -239,6 +245,7 @@ public class characterController : MonoBehaviour {
     }
 
     void setCurrentTile(Tile currentTile, Vector3 direction) {
+        currentTile.occupied = false;
         if (direction.x == 0) {
             if (direction.y > 0) {
                 this.currentTile = tilemapManager.FindTile(new Vector3Int(currentTile.position.x, currentTile.position.y + 1));
@@ -253,6 +260,7 @@ public class characterController : MonoBehaviour {
         else {
             this.currentTile = tilemapManager.FindTile(new Vector3Int(currentTile.position.x - 1, currentTile.position.y));
         }
+        this.currentTile.occupied = true;
     }
 
     bool isNewTileOccupied(Tile currentTile, Vector3 direction) {
@@ -282,15 +290,18 @@ public class characterController : MonoBehaviour {
             if (turnController.canUseAction(actionsPerMovement)) {
 
                 if (!isNewTileOccupied(currentTile, direction)) {
-                    Movement newMovement = new Movement(newPosition, currentMovement);
-                    currentMovement = newMovement;
-                    turnController.useAction(actionsPerMovement);
+                    if (!Physics2D.OverlapCircle(newPosition, 0.2f, obstacleMask)) {
+                        Movement newMovement = new Movement(newPosition, currentMovement);
+                        currentMovement = newMovement;
+                        turnController.useAction(actionsPerMovement);
+                        
+                        movePoint.position = newPosition;
+                        setCurrentTile(currentTile, direction);
+                    }
                 }
-
-                if (!Physics2D.OverlapCircle(newPosition, 0.2f, obstacleMask)) {
-                    movePoint.position = newPosition;
-                    setCurrentTile(currentTile, direction);
-                }
+            else {
+                Debug.Log("Tile is occupied - cannot move there");
+            }
             }
             else {
                 endOfTurn();
@@ -310,6 +321,7 @@ public class characterController : MonoBehaviour {
     
     private void endOfTurn() {
         myTurn = false;
+        isTurnEnding = false;
         turnController.endOfTurn();
     }
 

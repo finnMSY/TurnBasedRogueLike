@@ -15,6 +15,7 @@ public class Ability {
     public string name;
     public int damage;
     public TextAsset range;
+    public GameObject animation;
 }
 
 public enum EnemyType { 

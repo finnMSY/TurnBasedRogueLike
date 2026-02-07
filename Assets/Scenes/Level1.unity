@@ -2415,6 +2415,7 @@ MonoBehaviour:
     - name: Ice Blast
       damage: 10
       range: {fileID: 4900000, guid: 0ff8ec78b7e6de145ad9c6050eb30076, type: 3}
+      animation: {fileID: 797223055465786794, guid: 52d16e1032d518a4faf772dee8b6aead, type: 3}
 --- !u!4 &336715127
 Transform:
   m_ObjectHideFlags: 0

@@ -16,6 +16,7 @@ public class enemyController : MonoBehaviour {
     private Color originalColor;
     private List<Tile> totalTiles = new List<Tile>();
     private GameObject playerObject;
+    private GameObject attackObject;
     private gameController turnController;
     private Dictionary<Tile, int> tileActionPoints;
     private Dictionary<Ability, int> abilityActionPoints;
@@ -160,6 +161,20 @@ public class enemyController : MonoBehaviour {
         turnController.endOfTurn();
     }
 
+    private void Attack(Ability ability, int damageAmount)
+    {
+        Debug.Log($"Use {ability.name} for {damageAmount} damage.");
+
+        characterController player = playerObject.GetComponent<characterController>();
+        
+        Vector3 direction = (player.transform.position - transform.position).normalized;
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + 90f;
+        Quaternion rotation = Quaternion.Euler(new Vector3(0, 0, angle));
+
+        ability.animation.GetComponent<enemyAnimationController>().damage = damageAmount;
+        attackObject = Instantiate(ability.animation, transform.position, Quaternion.identity * rotation, transform);
+    }
+
     private IEnumerator attack_or_move_coroutine()
     {
         var (tileDict, tileKey) = GetHighestTileDictionary();
@@ -174,12 +189,7 @@ public class enemyController : MonoBehaviour {
         }
         else if (abilityKey != null)
         {
-            Debug.Log($"Use {abilityKey.name} for {abilityValue} damage.");
-            characterController player = playerObject.GetComponent<characterController>();
-            if (player != null)
-            {
-                player.takeDamage(abilityValue);
-            }
+            Attack(abilityKey, abilityValue);
         }
     }
 
