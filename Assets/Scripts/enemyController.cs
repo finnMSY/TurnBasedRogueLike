@@ -13,6 +13,7 @@ public class enemyController : MonoBehaviour {
     public int numActions;
     private SpriteRenderer spriteRenderer;
     public float flashDuration = 0.1f; 
+    public GameObject deathAnim;
     private Color originalColor;
     private List<Tile> totalTiles = new List<Tile>();
     private GameObject playerObject;
@@ -113,6 +114,7 @@ public class enemyController : MonoBehaviour {
             currentTile.occupied = false;
         }
         Destroy(this.gameObject);
+        Instantiate(deathAnim, transform.position, Quaternion.identity);
     }
 
     public void startTurn()

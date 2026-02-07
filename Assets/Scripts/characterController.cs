@@ -2,6 +2,15 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
+// TODO:
+// * Add health and attack cooldown to players HUD
+// * Stop attack range from showing up on obstacles (or at least look different).
+// * Add inventory to store items picked up from enemies. (Which can be used to unlock doors and chests)
+// * Add support for additional attacks for player.
+
+// * Add random room gen
+// * Add chests that give a random loot pool.
+
 public class Movement 
 {
   public Vector3 position;
@@ -90,7 +99,6 @@ public class characterController : MonoBehaviour {
         isAiming = false;
         attack.GetComponent<animationController>().decreaseCooldown();
         currentMovement = new Movement(transform.position, null);
-        Debug.Log(attack.GetComponent<animationController>().getCurrentCooldown());
     }
 
     int CustomRound(float value) {
