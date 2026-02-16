@@ -2,17 +2,22 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class enemyAnimationController : MonoBehaviour
+public class enemyAbility : MonoBehaviour
 {
-    public Animator animator;
+    public string name;
+    public int damage;
+    public TextAsset range;
+    public AnimationClip animation;
+    public int actionsRequired = 2;
 
+
+    public Animator animator;
     public SpriteRenderer spriteRenderer;
     int current_cooldown = 0;
     public int attack_cooldown;
     int decrease_cooldown_rate = 1;
     public float moveSpeed = 7;
     Vector3 direction;
-    public int damage;
     Vector3 move;
     GameObject playerObject;
     float angle;

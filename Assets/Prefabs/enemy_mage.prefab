@@ -135,6 +135,8 @@ MonoBehaviour:
   flashDuration: 0.1
   deathAnim: {fileID: 3664705148797248096, guid: b9bf685ea8356d84091b2eb2731e90cb, type: 3}
   enemyType: 2
+  abilities:
+  - {fileID: 797223055465786794, guid: 52d16e1032d518a4faf772dee8b6aead, type: 3}
   speed: 5
   damageMultiplyer: 1
   health: 100
