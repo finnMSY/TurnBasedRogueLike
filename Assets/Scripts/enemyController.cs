@@ -107,7 +107,7 @@ public class enemyController : MonoBehaviour {
 
     private void startTurnCourutine()
     {   
-        // Generate list of total options
+        // Generate list of total options. (potentially make it a list instead of a dict?)
         Dictionary<int, ActionableOptions> totalOptions = GetTotalOptions(currentTile, numActions, list_of_abilties);
 
         // Assign points to all options
