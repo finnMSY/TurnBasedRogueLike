@@ -89,32 +89,170 @@ public class enemyController : MonoBehaviour {
     
     public void startTurn()
     {
-        StartCoroutine(startTurnCourutine());
+        // StartCoroutine(startTurnCourutine());
+        startTurnCourutine();
     }
 
-    private IEnumerator startTurnCourutine()
-    {   
-        currentActions = numActions;
-        while (currentActions > 0) {
-            // Define score dictionaries
-            Dictionary<Tile, int> points_per_tile = new Dictionary<Tile, int>();
-            Dictionary<enemyAbility, int> points_per_ability = new Dictionary<enemyAbility, int>();
+    class ActionableOptions 
+    {
+        public Dictionary<Tile, List<Tile>> Movements { get; }
+        public List<enemyAbility> Abilities { get; }
 
-            // Gets the quickest path
-            List<Tile> quickestPath = findQuickestPath(currentTile, playerController.currentTile);
-
-            // Finds all moveable tiles
-            List<Tile> totalMoveableTiles = findTotalMoveableTiles(currentTile, currentActions);
-
-            // Assigns points to all tiles and attack
-            (points_per_tile, points_per_ability) = assignPoints(quickestPath, totalMoveableTiles, points_per_tile, points_per_ability);
-            
-            // Wait for movement/attack to complete
-            yield return StartCoroutine(attackOrMoveCoroutine(points_per_tile, points_per_ability));
+        public ActionableOptions(Dictionary<Tile, List<Tile>> movements, List<enemyAbility> abilities)
+        {
+            Movements = movements;
+            Abilities = abilities;
         }
-        
+    }   
+
+    private void startTurnCourutine()
+    {   
+        // Generate list of total options
+        Dictionary<int, ActionableOptions> totalOptions = GetTotalOptions(currentTile, numActions, list_of_abilties);
+
+        // Assign points to all options
+        List<Tile> quickestPath = findQuickestPath(currentTile, playerController.currentTile);
+        var optionsWithPoints = AssignPoints(totalOptions, quickestPath);
+
+        // Find best combination of options
+        //...
+
+        // Execute moves/abilities
+        //...
+
         // End turn
-        turnController.endOfTurn();
+        turnController.endOfTurn();    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // for (int i = 0; i < numActions; i++)
+        // {
+        //     List<Tile> totalMoveableTiles = 
+
+        //     foreach (Tile t in ts)
+        //     {
+        //         List<Tile> totalMoveableTiles = findTotalMoveableTiles(t, currentActions);
+        //     } 
+            
+        //     List<enemyAbility> totalUseableAbilities = findTotalUseableAbilities(list_of_abilties, currentActions);
+        //     totalOptions[i] = ActionableOptions(totalMoveableTiles, totalUseableAbilities);
+        // }
+        
+        // Calculate points to all options
+
+        // Determine based combination of points 
+
+
+
+
+        // currentActions = numActions;
+        // while (currentActions > 0) {
+        //     // Define score dictionaries
+        //     Dictionary<Tile, int> points_per_tile = new Dictionary<Tile, int>();
+        //     Dictionary<enemyAbility, int> points_per_ability = new Dictionary<enemyAbility, int>();
+
+        //     // Gets the quickest path
+        //     List<Tile> quickestPath = findQuickestPath(currentTile, playerController.currentTile);
+
+        //     // Finds all moveable tiles
+        //     List<Tile> totalMoveableTiles = findTotalMoveableTiles(currentTile, currentActions);
+
+        //     // Assigns points to all tiles and attack
+        //     (points_per_tile, points_per_ability) = assignPoints(quickestPath, totalMoveableTiles, points_per_tile, points_per_ability);
+            
+        //     // Wait for movement/attack to complete
+        //     yield return StartCoroutine(attackOrMoveCoroutine(points_per_tile, points_per_ability));
+        // }
+    }
+
+    private Dictionary<int, ActionableOptions> GetTotalOptions(Tile currentTile, int numActions, List<enemyAbility> listOfAbilties)
+    {
+        var totalOptions = new Dictionary<int, ActionableOptions>();
+        Queue<Tile> tileQueue = new Queue<Tile>();
+        tileQueue.Enqueue(currentTile);
+
+        for (int i = 0; i < numActions; i++) {
+            Dictionary<Tile, List<Tile>> movements = new Dictionary<Tile, List<Tile>>();
+            List<Tile> totalTiles = new List<Tile>();
+
+            while (tileQueue.Count > 0)
+            {
+                Tile tile = tileQueue.Dequeue();
+                List<Tile> totalMoveableTiles = FindTotalMoveableTiles(tile, 1);
+                totalTiles.AddRange(totalMoveableTiles);
+
+                movements[tile] = totalMoveableTiles;
+            }
+
+            foreach (Tile tile in totalTiles)
+            {
+                tileQueue.Enqueue(tile);  
+            }
+
+            List<enemyAbility> totalUseableAbilities = FindTotalUseableAbilities(listOfAbilties, numActions-i);
+            totalOptions[i] = new ActionableOptions(movements, totalUseableAbilities);
+        } 
+
+        return totalOptions;
+    }
+
+    private _ AssignPoints(Dictionary<int, ActionableOptions> totalOptions, List<Tile> quickestPath)
+    {
+        // TODO
+        // Add class (dataclass) to house the total (pointed) movements and abilities per turn order
+        // Complete ability pointing logic
+        // Create final object to be returned
+
+        // var optionsWithPoints = Dictionary<int, >  
+        foreach (ActionableOptions options in totalOptions.Value)
+        {
+            // Assign movement points
+            Dictionary<Tile, List<Tile>> movements = options.Movements;
+
+            var dict = new Dictionary<KeyValuePair<Tile, Tile>, int>();
+            foreach (var movement in movements)
+            {
+                var from = movement.Key;
+                var toList = movement.Value;
+
+                var list = new List<KeyValuePair<Tile, Tile>>();
+                foreach (Tile t in toList)
+                {
+                    var keyPair = new KeyValuePair<Tile, Tile>(from, t);
+
+                    if (quickestPath.Contains(t)) {
+                        dict[keyPair] = 1;
+                    }
+                    else
+                    {
+                        dict[keyPair] = 0;
+                    }
+                }
+            }
+
+            // Assign ability points
+            List<enemyAbility> abilities = options.Abilities;
+            foreach (enemyAbility ability in abilities)
+            {
+                // If player is in range of ability add points based on damage
+                // Otherwise give 0
+            }
+        }
     }
 
     private IEnumerator attackOrMoveCoroutine(Dictionary<Tile, int> points_per_tile,  Dictionary<enemyAbility, int> points_per_ability)
@@ -307,7 +445,21 @@ public class enemyController : MonoBehaviour {
         attackObject = Instantiate(ability.gameObject, transform.position, Quaternion.identity * rotation, transform);
     }
 
-    List<Tile> findTotalMoveableTiles(Tile startingTile, int maxLevels) {
+
+    List<enemyAbility> FindTotalUseableAbilities(List<enemyAbility> abilties, int actions)
+    {
+        List<enemyAbility> useableAbilities = new List<enemyAbility>();
+        foreach(enemyAbility ability in abilties)
+        {
+            if (ability.actionsRequired <= actions)
+            {
+                useableAbilities.Add(ability);
+            }
+        }
+        return useableAbilities;
+    }
+
+    List<Tile> FindTotalMoveableTiles(Tile startingTile, int maxLevels) {
         List<Tile> totalMoveableTiles = new List<Tile>();
 
         Queue<(Tile, int)> bfsQueue = new Queue<(Tile, int)>();
