@@ -8,13 +8,11 @@ using Newtonsoft.Json.Linq;
 
 // TODO
 // * Enemies still sometimes fire in the wrong direction
-// * Improve enemy AI so that they can move and attack on the same move
 // * Add support for multiple attacks
 //  * Give each attack a different cooldown
 //
 // * Improve AI so that they take into account if they will get damaged in a given tile by the player. 
 // * If enemy gets hit by another enemy, they will try get out of the way before attacking (all other tiles will get given more points than attacking).
-// * Allow attacks to be stored on the enemy rather then on the turnController (a custmom dropdown that contains all of the given spells for that particular enemy class / level).
 // * Add item drops
 
 
@@ -356,6 +354,9 @@ public class enemyController : MonoBehaviour {
 
     private List<Options> GetHighestScoreOptionOrder(List<ScoredOptions> options)
     {
+        // TODO
+        // Add abilities into this
+
         List<Options> permutations = new List<Options>();
 
         for (int i = 0; i < options.Count; i++)
