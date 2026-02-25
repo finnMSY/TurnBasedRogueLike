@@ -141,15 +141,24 @@ public class enemyController : MonoBehaviour {
         }
     } 
 
-    // class Options 
-    // {
-    //     public Option(enemyAbility option, int score)
-    //     {
-    //         AbilityOption = option;
-    //         Score = score;
-    //     }
+    class Options 
+    {
+        public List<Option> Values { get; }
+        public Options(List<Option> values)
+        {
+            Values = values;
+        }
 
-    // }  
+        public int GetScore()
+        {
+            int totalScore = 0;
+            foreach (Option option in Values)
+            {
+                totalScore += option.Score;
+            }
+            return totalScore;
+        }
+    }  
 
     private void startTurnCourutine()
     {   
@@ -162,7 +171,7 @@ public class enemyController : MonoBehaviour {
         // ViewScoring(scoredTotalOptions);
 
         // Find best combination of options
-        List<ScoredOptions> optionOrder = GetHighestScoreOptionOrder(scoredTotalOptions);
+        List<Options> optionOrder = GetHighestScoreOptionOrder(scoredTotalOptions);
 
         // Execute moves/abilities
         //...
@@ -346,9 +355,10 @@ public class enemyController : MonoBehaviour {
         return totalScoredOptions;
     }
 
-    private List<ScoredOptions> GetHighestScoreOptionOrder(List<ScoredOptions> options)
+    private List<Options> GetHighestScoreOptionOrder(List<ScoredOptions> options)
     {
-        List<List<Option>> permutations = new List<List<Option>>();
+        // List<List<Option>> permutations = new List<List<Option>>();
+        List<Options> permutations = new List<Options>();
 
         for (int i = 0; i < options.Count; i++)
         {
@@ -366,16 +376,16 @@ public class enemyController : MonoBehaviour {
             {
                 foreach (Option option in iterationOptions)
                 {
-                    permutations.Add(new List<Option> { option });
+                    permutations.Add(new Options(new List<Option> { option }));
                 }
             }
             else
             {
-                List<List<Option>> newPermutations = new List<List<Option>>();
+                List<Options> newPermutations = new List<Options>();
 
-                foreach (List<Option> permutation in permutations)
+                foreach (Options permutation in permutations)
                 {
-                    Option lastOption = permutation[permutation.Count - 1];
+                    Option lastOption = permutation.Values[permutation.Values.Count - 1];
                     Tile endingTile = lastOption.MovementOption.Value.Value;
 
                     foreach (Option option in iterationOptions)
@@ -383,9 +393,9 @@ public class enemyController : MonoBehaviour {
                         Tile startingTile = option.MovementOption.Value.Key;
                         if (endingTile == startingTile)
                         {
-                            List<Option> newPermutation = new List<Option>(permutation);
+                            List<Option> newPermutation = new List<Option>(permutation.Values);
                             newPermutation.Add(option);
-                            newPermutations.Add(newPermutation);
+                            newPermutations.Add(new Options(newPermutation));
                         }
                     }
                 }
@@ -396,14 +406,14 @@ public class enemyController : MonoBehaviour {
 
         Debug.Log("SEPERATE ITERATION");
         Debug.Log("\n_________________________________________\n");
-        foreach (List<Option> perm in permutations)
+        foreach (Options perm in permutations)
         {
-            Debug.Log("SEPERATE PERMUTATION");
-            foreach (Option o in perm)
+            Debug.Log("SEPERATE PERMUTATION, Score: " + perm.GetScore());
+            foreach (Option o in perm.Values)
             {
                 if (o.isMovement())
                 {
-                    Debug.Log("Move from " + o.MovementOption.Value.Key.position + " to " + o.MovementOption.Value.Value.position + ". Score");
+                    Debug.Log("Move from " + o.MovementOption.Value.Key.position + " to " + o.MovementOption.Value.Value.position);
                 }
                 else
                 {
@@ -412,7 +422,7 @@ public class enemyController : MonoBehaviour {
             }
         }
 
-        return options;
+        return permutations;
     }
 
     private IEnumerator attackOrMoveCoroutine(Dictionary<Tile, int> points_per_tile,  Dictionary<enemyAbility, int> points_per_ability)
