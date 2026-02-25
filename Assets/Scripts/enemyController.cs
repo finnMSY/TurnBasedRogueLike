@@ -276,26 +276,25 @@ public class enemyController : MonoBehaviour {
             Dictionary<Tile, List<Tile>> movements = options.Movements;
 
             Dictionary<KeyValuePair<Tile, Tile>, int> scoredMovements = new Dictionary<KeyValuePair<Tile, Tile>, int>();
-            foreach (var movement in movements)
+            foreach (var keyPair in movements)
             {
-                var from = movement.Key;
-                var toList = movement.Value;
+                Tile startingTile = keyPair.Key;
+                List<Tile> endingTileList = keyPair.Value;
 
-                var list = new List<KeyValuePair<Tile, Tile>>();
-                foreach (Tile t in toList)
+                foreach (Tile tile in endingTileList)
                 {
-                    var keyPair = new KeyValuePair<Tile, Tile>(from, t);
+                    KeyValuePair<Tile, Tile> movement = new KeyValuePair<Tile, Tile>(startingTile, tile);
 
-                    if (t == currentTile)
+                    if (tile == startingTile)
                     {
-                        scoredMovements[keyPair] = 1;
+                        scoredMovements[movement] = 1;
                     }
-                    else if (quickestPath.Contains(t)) {
-                        scoredMovements[keyPair] = 2;
+                    else if (quickestPath.Contains(tile)) {
+                        scoredMovements[movement] = 2;
                     }
                     else
                     {
-                        scoredMovements[keyPair] = 0;
+                        scoredMovements[movement] = 0;
                     }
                 }
             }
@@ -413,7 +412,7 @@ public class enemyController : MonoBehaviour {
             {
                 if (o.isMovement())
                 {
-                    Debug.Log("Move from " + o.MovementOption.Value.Key.position + " to " + o.MovementOption.Value.Value.position);
+                    Debug.Log("Move from " + o.MovementOption.Value.Key.position + " to " + o.MovementOption.Value.Value.position + ". Score: " + o.Score);
                 }
                 else
                 {
