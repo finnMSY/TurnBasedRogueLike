@@ -117,6 +117,40 @@ public class enemyController : MonoBehaviour {
         }
     }  
 
+    class Option 
+    {
+        public KeyValuePair<Tile, Tile>? MovementOption { get; }
+        public enemyAbility AbilityOption { get; }
+        public int Score { get; }
+
+        public Option(enemyAbility option, int score)
+        {
+            AbilityOption = option;
+            Score = score;
+        }
+
+        public Option(KeyValuePair<Tile, Tile> option, int score)
+        {
+            MovementOption = option;
+            Score = score;
+        }
+
+        public bool isMovement()
+        {
+            return MovementOption != null;
+        }
+    } 
+
+    // class Options 
+    // {
+    //     public Option(enemyAbility option, int score)
+    //     {
+    //         AbilityOption = option;
+    //         Score = score;
+    //     }
+
+    // }  
+
     private void startTurnCourutine()
     {   
         // Generate list of total options. (potentially make it a list instead of a dict?)
@@ -125,10 +159,10 @@ public class enemyController : MonoBehaviour {
         // Assign points to all options
         List<Tile> quickestPath = findQuickestPath(currentTile, playerController.currentTile);
         List<ScoredOptions> scoredTotalOptions = AssignPoints(totalOptions, quickestPath);
-        ViewScoring(scoredTotalOptions);
+        // ViewScoring(scoredTotalOptions);
 
         // Find best combination of options
-        //...
+        List<ScoredOptions> optionOrder = GetHighestScoreOptionOrder(scoredTotalOptions);
 
         // Execute moves/abilities
         //...
@@ -310,6 +344,75 @@ public class enemyController : MonoBehaviour {
             totalScoredOptions.Add(new ScoredOptions(scoredMovements, scoredAbilities));
         }
         return totalScoredOptions;
+    }
+
+    private List<ScoredOptions> GetHighestScoreOptionOrder(List<ScoredOptions> options)
+    {
+        List<List<Option>> permutations = new List<List<Option>>();
+
+        for (int i = 0; i < options.Count; i++)
+        {
+            ScoredOptions iterationScoredOptions = options[i];
+
+            // Convert `Movements` to `Options`
+            List<Option> iterationOptions = new List<Option>();
+            foreach (var pair in iterationScoredOptions.Movements)
+            {
+                iterationOptions.Add(new Option(pair.Key, pair.Value));
+            }
+
+            // For first iteration of movements
+            if (i == 0)
+            {
+                foreach (Option option in iterationOptions)
+                {
+                    permutations.Add(new List<Option> { option });
+                }
+            }
+            else
+            {
+                List<List<Option>> newPermutations = new List<List<Option>>();
+
+                foreach (List<Option> permutation in permutations)
+                {
+                    Option lastOption = permutation[permutation.Count - 1];
+                    Tile endingTile = lastOption.MovementOption.Value.Value;
+
+                    foreach (Option option in iterationOptions)
+                    {
+                        Tile startingTile = option.MovementOption.Value.Key;
+                        if (endingTile == startingTile)
+                        {
+                            List<Option> newPermutation = new List<Option>(permutation);
+                            newPermutation.Add(option);
+                            newPermutations.Add(newPermutation);
+                        }
+                    }
+                }
+
+                permutations = newPermutations;
+            } 
+        }
+
+        Debug.Log("SEPERATE ITERATION");
+        Debug.Log("\n_________________________________________\n");
+        foreach (List<Option> perm in permutations)
+        {
+            Debug.Log("SEPERATE PERMUTATION");
+            foreach (Option o in perm)
+            {
+                if (o.isMovement())
+                {
+                    Debug.Log("Move from " + o.MovementOption.Value.Key.position + " to " + o.MovementOption.Value.Value.position + ". Score");
+                }
+                else
+                {
+                    Debug.Log("Use " + o.AbilityOption.name);
+                }
+            }
+        }
+
+        return options;
     }
 
     private IEnumerator attackOrMoveCoroutine(Dictionary<Tile, int> points_per_tile,  Dictionary<enemyAbility, int> points_per_ability)
