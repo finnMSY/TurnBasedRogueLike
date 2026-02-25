@@ -105,6 +105,18 @@ public class enemyController : MonoBehaviour {
         }
     }   
 
+    class ScoredOptions 
+    {
+        public Dictionary<KeyValuePair<Tile, Tile>, int> Movements { get; }
+        public Dictionary<enemyAbility, int> Abilities { get; }
+
+        public ScoredOptions(Dictionary<KeyValuePair<Tile, Tile>, int> movements, Dictionary<enemyAbility, int> abilities)
+        {
+            Movements = movements;
+            Abilities = abilities;
+        }
+    }  
+
     private void startTurnCourutine()
     {   
         // Generate list of total options. (potentially make it a list instead of a dict?)
@@ -112,7 +124,8 @@ public class enemyController : MonoBehaviour {
 
         // Assign points to all options
         List<Tile> quickestPath = findQuickestPath(currentTile, playerController.currentTile);
-        var optionsWithPoints = AssignPoints(totalOptions, quickestPath);
+        List<ScoredOptions> scoredTotalOptions = AssignPoints(totalOptions, quickestPath);
+        ViewScoring(scoredTotalOptions);
 
         // Find best combination of options
         //...
@@ -211,20 +224,15 @@ public class enemyController : MonoBehaviour {
         return totalOptions;
     }
 
-    private _ AssignPoints(Dictionary<int, ActionableOptions> totalOptions, List<Tile> quickestPath)
+    private List<ScoredOptions> AssignPoints(Dictionary<int, ActionableOptions> totalOptions, List<Tile> quickestPath)
     {
-        // TODO
-        // Add class (dataclass) to house the total (pointed) movements and abilities per turn order
-        // Complete ability pointing logic
-        // Create final object to be returned
-
-        // var optionsWithPoints = Dictionary<int, >  
-        foreach (ActionableOptions options in totalOptions.Value)
+        List<ScoredOptions> totalScoredOptions = new List<ScoredOptions>();
+        foreach (ActionableOptions options in totalOptions.Values)
         {
             // Assign movement points
             Dictionary<Tile, List<Tile>> movements = options.Movements;
 
-            var dict = new Dictionary<KeyValuePair<Tile, Tile>, int>();
+            Dictionary<KeyValuePair<Tile, Tile>, int> scoredMovements = new Dictionary<KeyValuePair<Tile, Tile>, int>();
             foreach (var movement in movements)
             {
                 var from = movement.Key;
@@ -235,24 +243,73 @@ public class enemyController : MonoBehaviour {
                 {
                     var keyPair = new KeyValuePair<Tile, Tile>(from, t);
 
-                    if (quickestPath.Contains(t)) {
-                        dict[keyPair] = 1;
+                    if (t == currentTile)
+                    {
+                        scoredMovements[keyPair] = 1;
+                    }
+                    else if (quickestPath.Contains(t)) {
+                        scoredMovements[keyPair] = 2;
                     }
                     else
                     {
-                        dict[keyPair] = 0;
+                        scoredMovements[keyPair] = 0;
                     }
                 }
             }
 
             // Assign ability points
             List<enemyAbility> abilities = options.Abilities;
+
+            Dictionary<enemyAbility, int> scoredAbilities = new Dictionary<enemyAbility, int>();
             foreach (enemyAbility ability in abilities)
             {
-                // If player is in range of ability add points based on damage
-                // Otherwise give 0
+                // Get ability attributes
+                int damage = ability.damage;
+                Dictionary<string, object> range = JsonConvert.DeserializeObject<Dictionary<string, object>>(ability.range.text);
+                JArray range_tiles = JArray.Parse(range["tiles"].ToString());
+                
+                // Check if the player is within the abilities range from their current position
+                bool playerInRange = false;
+                foreach (JObject tile in range_tiles)
+                {
+                    // Get relative coordinates of tile
+                    int x = (int)tile["x"];
+                    int y = (int)tile["y"];
+                    
+                    // Convert relative coordinates to world position
+                    Vector3Int targetPos = new Vector3Int(
+                        currentTile.position.x + x,
+                        currentTile.position.y + y,
+                        0
+                    );
+                    
+                    // Find in-game tile at those coordinates
+                    Tile targetTile = tileManager.FindTile(targetPos);
+                    Tile playerTile = playerController.currentTile;
+                    if (targetTile != null) 
+                    {                    
+                        if (targetTile == playerTile)
+                        {
+                            playerInRange = true;
+                            break;
+                        }
+                    }
+                }
+                
+                // Assign points to ability if player is in range
+                if (playerInRange)
+                {
+                    scoredAbilities[ability] = damage;
+                }
+                else
+                {
+                    scoredAbilities[ability] = 0;
+                }
             }
+
+            totalScoredOptions.Add(new ScoredOptions(scoredMovements, scoredAbilities));
         }
+        return totalScoredOptions;
     }
 
     private IEnumerator attackOrMoveCoroutine(Dictionary<Tile, int> points_per_tile,  Dictionary<enemyAbility, int> points_per_ability)
@@ -604,6 +661,33 @@ public class enemyController : MonoBehaviour {
             }
         }
         return (null);
+    }
+
+    private void ViewScoring(List<ScoredOptions> scoredTotalOptions)
+    {
+        foreach(ScoredOptions so in scoredTotalOptions)
+        {
+            Debug.Log("Action TURN");
+            Debug.Log("\n___________________________________________\n");
+            foreach (var pair in so.Movements)
+            {
+                var price = pair.Value;
+                var m = pair.Key;
+                Debug.Log("Moving from " + m.Key.position + " to " + m.Value.position + " has a score of: " + price);
+            }
+            Debug.Log("\n___________________________________________\n");
+            foreach (var pair in so.Abilities)
+            {
+                var ability = pair.Key;
+                var price = pair.Value;
+                Debug.Log("Using " + ability.name + " has a score of: " + price);
+            }
+            if (so.Abilities.Count == 0)
+            {
+                Debug.Log("You cannot use any abilities.");
+            }
+            Debug.Log("\n___________________________________________\n\n\n");
+        }
     }
 
     void Update() {
