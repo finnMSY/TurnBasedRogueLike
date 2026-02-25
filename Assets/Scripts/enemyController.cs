@@ -356,7 +356,6 @@ public class enemyController : MonoBehaviour {
 
     private List<Options> GetHighestScoreOptionOrder(List<ScoredOptions> options)
     {
-        // List<List<Option>> permutations = new List<List<Option>>();
         List<Options> permutations = new List<Options>();
 
         for (int i = 0; i < options.Count; i++)
