@@ -10,10 +10,9 @@ using Newtonsoft.Json.Linq;
 // * Enemies still sometimes fire in the wrong direction
 // * Add support for multiple attacks
 //  * Give each attack a different cooldown
-//
 // * Improve AI so that they take into account if they will get damaged in a given tile by the player. 
-// * If enemy gets hit by another enemy, they will try get out of the way before attacking (all other tiles will get given more points than attacking).
-// * Add item drops
+//  * If enemy gets hit by another enemy, they will try get out of the way before attacking (all other tiles will get given more points than attacking).
+// * Add item dropping capacity (maybe)
 
 
 public class enemyController : MonoBehaviour {
