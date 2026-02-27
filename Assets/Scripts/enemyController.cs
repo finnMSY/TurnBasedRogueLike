@@ -232,7 +232,7 @@ public class enemyController : MonoBehaviour {
 
         // Assign points to all options
         List<Tile> quickestPath = findQuickestPath(currentTile, playerController.currentTile);
-        List<ScoredOptions> scoredTotalOptions = AssignPoints(totalOptions, quickestPath);
+        List<ScoredOptions> scoredTotalOptions = AssignMovementPoints(totalOptions, quickestPath);
         // ViewScoring(scoredTotalOptions);
 
         // Find best combination of options
@@ -248,62 +248,6 @@ public class enemyController : MonoBehaviour {
 
         // End turn
         turnController.endOfTurn();    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // for (int i = 0; i < numActions; i++)
-        // {
-        //     List<Tile> totalMoveableTiles = 
-
-        //     foreach (Tile t in ts)
-        //     {
-        //         List<Tile> totalMoveableTiles = findTotalMoveableTiles(t, currentActions);
-        //     } 
-            
-        //     List<enemyAbility> totalUseableAbilities = findTotalUseableAbilities(list_of_abilties, currentActions);
-        //     totalOptions[i] = ActionableOptions(totalMoveableTiles, totalUseableAbilities);
-        // }
-        
-        // Calculate points to all options
-
-        // Determine based combination of points 
-
-
-
-
-        // currentActions = numActions;
-        // while (currentActions > 0) {
-        //     // Define score dictionaries
-        //     Dictionary<Tile, int> points_per_tile = new Dictionary<Tile, int>();
-        //     Dictionary<enemyAbility, int> points_per_ability = new Dictionary<enemyAbility, int>();
-
-        //     // Gets the quickest path
-        //     List<Tile> quickestPath = findQuickestPath(currentTile, playerController.currentTile);
-
-        //     // Finds all moveable tiles
-        //     List<Tile> totalMoveableTiles = findTotalMoveableTiles(currentTile, currentActions);
-
-        //     // Assigns points to all tiles and attack
-        //     (points_per_tile, points_per_ability) = assignPoints(quickestPath, totalMoveableTiles, points_per_tile, points_per_ability);
-            
-        //     // Wait for movement/attack to complete
-        //     yield return StartCoroutine(attackOrMoveCoroutine(points_per_tile, points_per_ability));
-        // }
     }
 
     private Dictionary<int, ActionableOptions> GetTotalOptions(Tile currentTile, int numActions, List<enemyAbility> listOfAbilties)
@@ -354,7 +298,7 @@ public class enemyController : MonoBehaviour {
         }
     }
 
-    private List<ScoredOptions> AssignPoints(Dictionary<int, ActionableOptions> totalOptions, List<Tile> quickestPath)
+    private List<ScoredOptions> AssignMovementPoints(Dictionary<int, ActionableOptions> totalOptions, List<Tile> quickestPath)
     {
         List<ScoredOptions> totalScoredOptions = new List<ScoredOptions>();
         Tile playerTile = playerController.currentTile;
@@ -382,7 +326,7 @@ public class enemyController : MonoBehaviour {
                 }
             }
 
-            // Assign ability points
+            // Assign placeholder ability points
             List<enemyAbility> abilities = options.Abilities;
 
             Dictionary<enemyAbility, int> scoredAbilities = new Dictionary<enemyAbility, int>();
@@ -390,53 +334,6 @@ public class enemyController : MonoBehaviour {
             {
                  scoredAbilities[ability] = 0;
             }
-
-            // Dictionary<enemyAbility, int> scoredAbilities = new Dictionary<enemyAbility, int>();
-            // foreach (enemyAbility ability in abilities)
-            // {
-            //     // Get ability attributes
-            //     int damage = ability.damage;
-            //     Dictionary<string, object> range = JsonConvert.DeserializeObject<Dictionary<string, object>>(ability.range.text);
-            //     JArray range_tiles = JArray.Parse(range["tiles"].ToString());
-                
-            //     // Check if the player is within the abilities range from their current position
-            //     bool playerInRange = false;
-            //     foreach (JObject tile in range_tiles)
-            //     {
-            //         // Get relative coordinates of tile
-            //         int x = (int)tile["x"];
-            //         int y = (int)tile["y"];
-                    
-            //         // Convert relative coordinates to world position
-            //         Vector3Int targetPos = new Vector3Int(
-            //             currentTile.position.x + x,
-            //             currentTile.position.y + y,
-            //             0
-            //         );
-                    
-            //         // Find in-game tile at those coordinates
-            //         Tile targetTile = tileManager.FindTile(targetPos);
-            //         Tile playerTile = playerController.currentTile;
-            //         if (targetTile != null) 
-            //         {                    
-            //             if (targetTile == playerTile)
-            //             {
-            //                 playerInRange = true;
-            //                 break;
-            //             }
-            //         }
-            //     }
-                
-            //     // Assign points to ability if player is in range
-            //     if (playerInRange)
-            //     {
-            //         scoredAbilities[ability] = damage;
-            //     }
-            //     else
-            //     {
-            //         scoredAbilities[ability] = 0;
-            //     }
-            // }
 
             totalScoredOptions.Add(new ScoredOptions(scoredMovements, scoredAbilities));
         }
@@ -563,152 +460,6 @@ public class enemyController : MonoBehaviour {
         return permutations;
     }
 
-    private IEnumerator attackOrMoveCoroutine(Dictionary<Tile, int> points_per_tile,  Dictionary<enemyAbility, int> points_per_ability)
-    {
-        // Get the tile highest points
-        (Tile maxTile, int maxTilePoints) = getHighestTile(points_per_tile);
-        if (maxTile == null)
-        {
-            maxTilePoints = 0;
-        }
-
-        // Get the ability with the highest points
-        (enemyAbility maxAbility, int maxAbilityPoints) = getHighestAbility(points_per_ability);
-        if (maxAbility == null)
-        {
-            maxAbilityPoints = 0;
-        }    
-
-        if (maxTilePoints == 0 && maxAbilityPoints == 0)
-        {
-            Debug.Log("No valid moves or attacks");
-            currentActions = 0;
-            yield break;
-        }
-
-        Debug.Log(maxAbilityPoints + " + " + maxTilePoints);
-                
-        // Execute the move action of the max tile points in higher than the max ability points and execute the ability or not 
-        if (maxTilePoints > maxAbilityPoints)
-        {
-            Debug.Log("Moving from: " + currentTile.position + " to: " + maxTile.position);
-            yield return StartCoroutine(moveEnemyRoutine(maxTile));
-        }
-        else
-        {
-            Attack(maxAbility, maxAbilityPoints);
-            yield return new WaitForSeconds(0.4f);
-        }
-    }
-
-    (Dictionary<Tile, int>? points_per_tile, Dictionary<enemyAbility, int>? points_per_ability) assignPoints(List<Tile> quickestPath, List<Tile> totalMoveableTiles, Dictionary<Tile, int> points_per_tile, Dictionary<enemyAbility, int> points_per_ability) 
-    {
-        if (quickestPath == null) return (null, null);
-        
-        // Assign points to all tiles in the quickest path that are reachable with current actions
-        if (quickestPath.Count >= 2)
-        {
-            Tile nextStepTile = quickestPath[1];
-            if (!points_per_tile.ContainsKey(nextStepTile))
-            {
-                // Give it high points to prefer moving toward player
-                points_per_tile.Add(nextStepTile, 1);
-            }
-        }
-
-        // Get the players current tile
-        Tile playerTile = playerController.currentTile;
-
-        // Assign points to each ability
-        foreach (enemyAbility ability in list_of_abilties)
-        {
-            if (ability.actionsRequired > currentActions)
-            {
-                continue;
-            }
-
-            // Get ability attributes
-            int damage = ability.damage;
-            Dictionary<string, object> range = JsonConvert.DeserializeObject<Dictionary<string, object>>(ability.range.text);
-            JArray range_tiles = JArray.Parse(range["tiles"].ToString());
-            
-            // Check if the player is within the abilities range from their current position
-            bool playerInRange = false;
-            foreach (JObject tile in range_tiles)
-            {
-                // Get relative coordinates of tile
-                int x = (int)tile["x"];
-                int y = (int)tile["y"];
-                
-                // Convert relative coordinates to world position
-                Vector3Int targetPos = new Vector3Int(
-                    currentTile.position.x + x,
-                    currentTile.position.y + y,
-                    0
-                );
-                
-                // Find in-game tile at those coordinates
-                Tile targetTile = tileManager.FindTile(targetPos);
-                if (targetTile != null) 
-                {                    
-                    if (targetTile == playerTile)
-                    {
-                        playerInRange = true;
-                        Debug.Log("PLAYER IN RANGE!");
-                        break;
-                    }
-                }
-                else
-                {
-                    // Debug.Log($"No tile found at position: {targetPos} (out of bounds)");
-                }
-            }
-            
-            // Assign points to ability if player is in range
-            if (playerInRange)
-            {
-                if (points_per_ability.ContainsKey(ability))
-                {
-                    points_per_ability[ability] = Mathf.Max(points_per_ability[ability], damage);
-                }
-                else
-                {
-                    points_per_ability.Add(ability, damage);
-                }
-            }
-        }
-
-        // Assign the remaining moveable tiles 0 points
-        if (totalMoveableTiles != null)
-        {
-            foreach(Tile t in totalMoveableTiles) {
-                if (!points_per_tile.ContainsKey(t)) {
-                    points_per_tile.Add(t, 0);
-                }
-            }
-        }
-
-        return (points_per_tile, points_per_ability);
-    }
-
-    public (Tile? tile, int points) getHighestTile(Dictionary<Tile, int> points_per_tile)
-    {
-        if (points_per_tile.Count == 0) 
-            return (null, 0);
-        
-        var maxPair = points_per_tile.OrderByDescending(x => x.Value).First();
-        return (maxPair.Key, maxPair.Value);
-    }
-
-    public (enemyAbility? ability, int points) getHighestAbility(Dictionary<enemyAbility, int> points_per_ability)
-    {
-        if (points_per_ability.Count == 0) 
-            return (null, 0);
-        
-        var maxPair = points_per_ability.OrderByDescending(x => x.Value).First();
-        return (maxPair.Key, maxPair.Value);
-    }
-
     public void takeDamage(int damage)
     {
         Debug.Log($"Dealt {damage} damage!");
@@ -774,7 +525,6 @@ public class enemyController : MonoBehaviour {
         int startY = enemyTile.position.y;
         int endY = playerTile.position.y;
 
-        // Horizontal check
         if (startY == endY)
         {
             int step = (endX > startX) ? 1 : -1;
@@ -784,7 +534,6 @@ public class enemyController : MonoBehaviour {
                 if (tile != null && tile.occupied) return true;
             }
         }
-        // Vertical check
         else if (startX == endX)
         {
             int step = (endY > startY) ? 1 : -1;
