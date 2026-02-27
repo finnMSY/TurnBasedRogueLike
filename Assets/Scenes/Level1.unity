@@ -131,6 +131,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 707297106}
     m_Modifications:
     - target: {fileID: 4038485490051030627, guid: c780bd6f6b0842749ab09e2949fbf0b4, type: 3}
+      propertyPath: tileManager
+      value: 
+      objectReference: {fileID: 314800759}
+    - target: {fileID: 4038485490051030627, guid: c780bd6f6b0842749ab09e2949fbf0b4, type: 3}
       propertyPath: startingTile.x
       value: 3
       objectReference: {fileID: 0}
@@ -180,7 +184,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6476112596416292826, guid: c780bd6f6b0842749ab09e2949fbf0b4, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -200,6 +204,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 707297106}
     m_Modifications:
+    - target: {fileID: 4038485490051030627, guid: c780bd6f6b0842749ab09e2949fbf0b4, type: 3}
+      propertyPath: tileManager
+      value: 
+      objectReference: {fileID: 314800759}
     - target: {fileID: 6432672741278523763, guid: c780bd6f6b0842749ab09e2949fbf0b4, type: 3}
       propertyPath: m_LocalPosition.x
       value: 1.155391

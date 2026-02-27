@@ -18,7 +18,7 @@ using Newtonsoft.Json.Linq;
 
 public class enemyController : MonoBehaviour {
 
-    private tilemapManager tileManager;
+    public tilemapManager tileManager;
     public int numActions;
     private int currentActions;
     private SpriteRenderer spriteRenderer;
@@ -50,7 +50,6 @@ public class enemyController : MonoBehaviour {
     {
         // Initialize variables from objects in Scene
         movePoint = transform.Find("movePoint").transform;
-        tileManager = FindObjectOfType<tilemapManager>();
         turnController = FindObjectOfType<gameController>();
         playerObject = GameObject.FindGameObjectWithTag("Player");
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -87,8 +86,7 @@ public class enemyController : MonoBehaviour {
     
     public void startTurn()
     {
-        // StartCoroutine(startTurnCourutine());
-        startTurnCourutine();
+        StartCoroutine(startTurnCourutine());
     }
 
     class ActionableOptions 
@@ -119,23 +117,54 @@ public class enemyController : MonoBehaviour {
     {
         public KeyValuePair<Tile, Tile>? MovementOption { get; }
         public enemyAbility AbilityOption { get; }
-        public int Score { get; }
+        public int Score { get; set; }
+        public int Actions { get; }
 
         public Option(enemyAbility option, int score)
         {
             AbilityOption = option;
             Score = score;
+            Actions = option.actionsRequired;
         }
 
         public Option(KeyValuePair<Tile, Tile> option, int score)
         {
             MovementOption = option;
             Score = score;
+            Actions = 1;
+        }
+
+        public Option(Tile option)
+        {
+            MovementOption = new KeyValuePair<Tile, Tile>(option, option);
+            Score = 1;
+            Actions = 1;
         }
 
         public bool isMovement()
         {
             return MovementOption != null;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is not Option other) return false;
+            
+            if (isMovement() != other.isMovement()) return false;
+            
+            if (isMovement())
+                return MovementOption.Value.Key == other.MovementOption.Value.Key &&
+                    MovementOption.Value.Value == other.MovementOption.Value.Value;
+            else
+                return AbilityOption == other.AbilityOption;
+        }
+
+        public override int GetHashCode()
+        {
+            if (isMovement())
+                return HashCode.Combine(MovementOption.Value.Key, MovementOption.Value.Value);
+            else
+                return HashCode.Combine(AbilityOption);
         }
     } 
 
@@ -156,9 +185,47 @@ public class enemyController : MonoBehaviour {
             }
             return totalScore;
         }
+
+        public int GetTotalActions()
+        {
+            int totalActions = 0;
+            foreach (Option option in Values)
+            {
+                totalActions += option.Actions;
+            }
+            return totalActions;
+        }
+
+        public Option GetLastMovement(Option currentTile)
+        {
+            for (int i = Values.Count - 1; i >= 0; i--)
+            {
+                Option option = Values[i]; 
+                if (option.isMovement())
+                {
+                    return option;
+                }
+            }
+            // Debug.Log("No Movements in `Options`");
+            return currentTile;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is not Options other) return false;
+            return Values.SequenceEqual(other.Values);
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = 17;
+            foreach (Option option in Values)
+                hash = hash * 31 + option.GetHashCode();
+            return hash;
+    }
     }  
 
-    private void startTurnCourutine()
+    private IEnumerator startTurnCourutine()
     {   
         // Generate list of total options. (potentially make it a list instead of a dict?)
         Dictionary<int, ActionableOptions> totalOptions = GetTotalOptions(currentTile, numActions, list_of_abilties);
@@ -169,10 +236,15 @@ public class enemyController : MonoBehaviour {
         // ViewScoring(scoredTotalOptions);
 
         // Find best combination of options
-        List<Options> optionOrder = GetHighestScoreOptionOrder(scoredTotalOptions);
+        List<Options> totalOptionPermutations = GetTotalOptionPermutations(scoredTotalOptions);
+        // ViewPermutations(totalOptionPermutations);
+
+        List<Options> bestOptions = GetHighestScoreOptionOrder(totalOptionPermutations);
+        // ViewBestOptions(bestOptions);
 
         // Execute moves/abilities
-        //...
+        int index = UnityEngine.Random.Range(0, bestOptions.Count);
+        yield return StartCoroutine(executeActions(bestOptions[index]));
 
         // End turn
         turnController.endOfTurn();    
@@ -265,9 +337,27 @@ public class enemyController : MonoBehaviour {
         return totalOptions;
     }
 
+    private IEnumerator executeActions(Options options)
+    {
+        foreach (Option option in options.Values)
+        {
+            if (option.isMovement())
+            {
+                Debug.Log("Moving from: " + option.MovementOption.Value.Key.position + " to: " + option.MovementOption.Value.Value.position);
+                yield return StartCoroutine(moveEnemyRoutine(option.MovementOption.Value.Value));
+            }
+            else
+            {
+                Attack(option.AbilityOption, option.AbilityOption.damage);
+                yield return new WaitForSeconds(0.4f);
+            }
+        }
+    }
+
     private List<ScoredOptions> AssignPoints(Dictionary<int, ActionableOptions> totalOptions, List<Tile> quickestPath)
     {
         List<ScoredOptions> totalScoredOptions = new List<ScoredOptions>();
+        Tile playerTile = playerController.currentTile;
         foreach (ActionableOptions options in totalOptions.Values)
         {
             // Assign movement points
@@ -282,13 +372,8 @@ public class enemyController : MonoBehaviour {
                 foreach (Tile tile in endingTileList)
                 {
                     KeyValuePair<Tile, Tile> movement = new KeyValuePair<Tile, Tile>(startingTile, tile);
-
-                    if (tile == startingTile)
-                    {
-                        scoredMovements[movement] = 1;
-                    }
-                    else if (quickestPath.Contains(tile)) {
-                        scoredMovements[movement] = 2;
+                    if (quickestPath.Contains(tile) && tile != playerTile) {
+                        scoredMovements[movement] = quickestPath.IndexOf(tile) + 1;
                     }
                     else
                     {
@@ -303,60 +388,93 @@ public class enemyController : MonoBehaviour {
             Dictionary<enemyAbility, int> scoredAbilities = new Dictionary<enemyAbility, int>();
             foreach (enemyAbility ability in abilities)
             {
-                // Get ability attributes
-                int damage = ability.damage;
-                Dictionary<string, object> range = JsonConvert.DeserializeObject<Dictionary<string, object>>(ability.range.text);
-                JArray range_tiles = JArray.Parse(range["tiles"].ToString());
-                
-                // Check if the player is within the abilities range from their current position
-                bool playerInRange = false;
-                foreach (JObject tile in range_tiles)
-                {
-                    // Get relative coordinates of tile
-                    int x = (int)tile["x"];
-                    int y = (int)tile["y"];
-                    
-                    // Convert relative coordinates to world position
-                    Vector3Int targetPos = new Vector3Int(
-                        currentTile.position.x + x,
-                        currentTile.position.y + y,
-                        0
-                    );
-                    
-                    // Find in-game tile at those coordinates
-                    Tile targetTile = tileManager.FindTile(targetPos);
-                    Tile playerTile = playerController.currentTile;
-                    if (targetTile != null) 
-                    {                    
-                        if (targetTile == playerTile)
-                        {
-                            playerInRange = true;
-                            break;
-                        }
-                    }
-                }
-                
-                // Assign points to ability if player is in range
-                if (playerInRange)
-                {
-                    scoredAbilities[ability] = damage;
-                }
-                else
-                {
-                    scoredAbilities[ability] = 0;
-                }
+                 scoredAbilities[ability] = 0;
             }
+
+            // Dictionary<enemyAbility, int> scoredAbilities = new Dictionary<enemyAbility, int>();
+            // foreach (enemyAbility ability in abilities)
+            // {
+            //     // Get ability attributes
+            //     int damage = ability.damage;
+            //     Dictionary<string, object> range = JsonConvert.DeserializeObject<Dictionary<string, object>>(ability.range.text);
+            //     JArray range_tiles = JArray.Parse(range["tiles"].ToString());
+                
+            //     // Check if the player is within the abilities range from their current position
+            //     bool playerInRange = false;
+            //     foreach (JObject tile in range_tiles)
+            //     {
+            //         // Get relative coordinates of tile
+            //         int x = (int)tile["x"];
+            //         int y = (int)tile["y"];
+                    
+            //         // Convert relative coordinates to world position
+            //         Vector3Int targetPos = new Vector3Int(
+            //             currentTile.position.x + x,
+            //             currentTile.position.y + y,
+            //             0
+            //         );
+                    
+            //         // Find in-game tile at those coordinates
+            //         Tile targetTile = tileManager.FindTile(targetPos);
+            //         Tile playerTile = playerController.currentTile;
+            //         if (targetTile != null) 
+            //         {                    
+            //             if (targetTile == playerTile)
+            //             {
+            //                 playerInRange = true;
+            //                 break;
+            //             }
+            //         }
+            //     }
+                
+            //     // Assign points to ability if player is in range
+            //     if (playerInRange)
+            //     {
+            //         scoredAbilities[ability] = damage;
+            //     }
+            //     else
+            //     {
+            //         scoredAbilities[ability] = 0;
+            //     }
+            // }
 
             totalScoredOptions.Add(new ScoredOptions(scoredMovements, scoredAbilities));
         }
         return totalScoredOptions;
     }
 
-    private List<Options> GetHighestScoreOptionOrder(List<ScoredOptions> options)
+    private List<Options> GetHighestScoreOptionOrder(List<Options> totalPermutations)
     {
-        // TODO
-        // Add abilities into this
+        List<Options> highestScoreOptions = new List<Options>();
+        int highestScore = 0;
+        foreach (Options permutation in totalPermutations)
+        {
+            int currentScore = permutation.GetScore();
 
+            if (currentScore > highestScore)
+            {
+                highestScoreOptions = new List<Options>{permutation};
+                highestScore = currentScore;
+            }
+            else if (currentScore == highestScore)
+            {
+                highestScoreOptions.Add(permutation);
+            }
+        }
+
+        foreach (Options options in highestScoreOptions)
+        {
+            options.Values.RemoveAll(option => 
+                option.isMovement() && 
+                option.MovementOption.Value.Key == option.MovementOption.Value.Value
+            );
+        }
+
+        return highestScoreOptions;
+    }
+
+    private List<Options> GetTotalOptionPermutations(List<ScoredOptions> options)
+    {
         List<Options> permutations = new List<Options>();
 
         for (int i = 0; i < options.Count; i++)
@@ -369,15 +487,29 @@ public class enemyController : MonoBehaviour {
             {
                 iterationOptions.Add(new Option(pair.Key, pair.Value));
             }
+            // Convert `Abilities` to `Options`
+            foreach (var pair in iterationScoredOptions.Abilities)
+            {
+                iterationOptions.Add(new Option(pair.Key, pair.Value));
+            }
 
-            // For first iteration of movements
+            // For first iteration of movement
             if (i == 0)
             {
                 foreach (Option option in iterationOptions)
                 {
-                    permutations.Add(new Options(new List<Option> { option }));
+                    Option _option = option;
+                    if (_option.Actions <= numActions)
+                    {
+                        if (!option.isMovement())
+                        {
+                            _option = SetAbilityScore(_option);
+                        }
+                        permutations.Add(new Options(new List<Option> { _option }));
+                    }
                 }
             }
+            // For remaining iterations of movement
             else
             {
                 List<Options> newPermutations = new List<Options>();
@@ -385,16 +517,42 @@ public class enemyController : MonoBehaviour {
                 foreach (Options permutation in permutations)
                 {
                     Option lastOption = permutation.Values[permutation.Values.Count - 1];
-                    Tile endingTile = lastOption.MovementOption.Value.Value;
-
+                    
                     foreach (Option option in iterationOptions)
                     {
-                        Tile startingTile = option.MovementOption.Value.Key;
-                        if (endingTile == startingTile)
+                        if (!lastOption.isMovement())
                         {
-                            List<Option> newPermutation = new List<Option>(permutation.Values);
-                            newPermutation.Add(option);
-                            newPermutations.Add(new Options(newPermutation));
+                            lastOption = permutation.GetLastMovement(new Option(currentTile));
+                        }
+
+                        if (option.isMovement()) {
+                            Tile startingTile = option.MovementOption.Value.Key;
+                            Tile endingTile = lastOption.MovementOption.Value.Value;
+
+                            if (endingTile == startingTile)
+                            {
+                                List<Option> newPermutation = new List<Option>(permutation.Values);
+                                newPermutation.Add(option);
+                                newPermutations.Add(new Options(newPermutation));
+                            }
+                        }
+                        else
+                        {
+                            Option scoredOption = SetAbilityScore(option, lastOption.MovementOption.Value.Value);
+                            if ((permutation.GetTotalActions() + scoredOption.Actions) <= numActions) {
+                                List<Option> newPermutation = new List<Option>(permutation.Values);
+                                newPermutation.Add(scoredOption);
+                                newPermutations.Add(new Options(newPermutation));
+                            }
+                            else
+                            {
+                                List<Option> newPermutation = new List<Option>(permutation.Values);
+                                Options newPermutationOptions = new Options(newPermutation);
+
+                                if (!newPermutations.Contains(newPermutationOptions)) {
+                                    newPermutations.Add(newPermutationOptions);
+                                }
+                            } 
                         }
                     }
                 }
@@ -402,25 +560,6 @@ public class enemyController : MonoBehaviour {
                 permutations = newPermutations;
             } 
         }
-
-        Debug.Log("SEPERATE ITERATION");
-        Debug.Log("\n_________________________________________\n");
-        foreach (Options perm in permutations)
-        {
-            Debug.Log("SEPERATE PERMUTATION, Score: " + perm.GetScore());
-            foreach (Option o in perm.Values)
-            {
-                if (o.isMovement())
-                {
-                    Debug.Log("Move from " + o.MovementOption.Value.Key.position + " to " + o.MovementOption.Value.Value.position + ". Score: " + o.Score);
-                }
-                else
-                {
-                    Debug.Log("Use " + o.AbilityOption.name);
-                }
-            }
-        }
-
         return permutations;
     }
 
@@ -628,6 +767,88 @@ public class enemyController : MonoBehaviour {
         return useableAbilities;
     }
 
+    private bool isSightObstructed(Tile enemyTile, Tile playerTile)
+    {        
+        int startX = enemyTile.position.x;
+        int endX = playerTile.position.x;
+        int startY = enemyTile.position.y;
+        int endY = playerTile.position.y;
+
+        // Horizontal check
+        if (startY == endY)
+        {
+            int step = (endX > startX) ? 1 : -1;
+            for (int x = startX + step; x != endX; x += step)
+            {
+                Tile tile = tileManager.FindTile(new Vector3Int(x, startY, 0));
+                if (tile != null && tile.occupied) return true;
+            }
+        }
+        // Vertical check
+        else if (startX == endX)
+        {
+            int step = (endY > startY) ? 1 : -1;
+            for (int y = startY + step; y != endY; y += step)
+            {
+                Tile tile = tileManager.FindTile(new Vector3Int(startX, y, 0));
+                if (tile != null && tile.occupied) return true;
+            }
+        }
+
+        return false;
+    }
+
+    private Option SetAbilityScore(Option option)
+    {
+        return SetAbilityScore(option, currentTile);
+    }
+    private Option SetAbilityScore(Option option, Tile currentTile)
+    {
+         // Get ability attributes
+        enemyAbility ability = option.AbilityOption;
+        int damage = ability.damage;
+        Dictionary<string, object> range = JsonConvert.DeserializeObject<Dictionary<string, object>>(ability.range.text);
+        JArray range_tiles = JArray.Parse(range["tiles"].ToString());
+        
+        // Check if the player is within the abilities range from their current position
+        bool playerInRange = false;
+        foreach (JObject tile in range_tiles)
+        {
+            // Get relative coordinates of tile
+            int x = (int)tile["x"];
+            int y = (int)tile["y"];
+            
+            // Convert relative coordinates to world position
+            Vector3Int targetPos = new Vector3Int(
+                currentTile.position.x + x,
+                currentTile.position.y + y,
+                0
+            );
+            
+            // Find in-game tile at those coordinates
+            Tile targetTile = tileManager.FindTile(targetPos);
+            Tile playerTile = playerController.currentTile;
+            if (targetTile != null) 
+            {                    
+                if (targetTile == playerTile)
+                {
+                    if (!isSightObstructed(currentTile, playerTile)) {
+                        playerInRange = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Assign points to ability if player is in range
+        int score = 0;
+        if (playerInRange)
+        {
+            score = damage;
+        }
+        return new Option(ability, score);
+    }
+
     List<Tile> FindTotalMoveableTiles(Tile startingTile, int maxLevels) {
         List<Tile> totalMoveableTiles = new List<Tile>();
 
@@ -775,6 +996,46 @@ public class enemyController : MonoBehaviour {
         return (null);
     }
 
+    private void ViewBestOptions(List<Options> bestOptions)
+    {
+        Debug.Log("LIST OF BEST OPTIONS WITH A SCORE OF: " + bestOptions[0].GetScore() + ":");
+        for (int i = 0; i < bestOptions.Count; i++) 
+        {
+            var options = bestOptions[i];
+            Debug.Log("Option #" + (i+1));
+            foreach(Option option in options.Values)
+            {
+                if (option.isMovement())
+                {
+                    Debug.Log("Move from " + option.MovementOption.Value.Key.position + " to " + option.MovementOption.Value.Value.position + ". Score: " + option.Score);
+                }
+                else
+                {
+                    Debug.Log("Use " + option.AbilityOption.name + ". Score: " + option.Score);
+                }
+            }
+        }
+    }
+    private void ViewPermutations(List<Options> permutations)
+    {
+        Debug.Log("SEPERATE ITERATION");
+        Debug.Log("\n_________________________________________\n");
+        foreach (Options perm in permutations)
+        {
+            Debug.Log("SEPERATE PERMUTATION, Score: " + perm.GetScore());
+            foreach (Option o in perm.Values)
+            {
+                if (o.isMovement())
+                {
+                    Debug.Log("Move from " + o.MovementOption.Value.Key.position + " to " + o.MovementOption.Value.Value.position + ". Score: " + o.Score);
+                }
+                else
+                {
+                    Debug.Log("Use " + o.AbilityOption.name + ". Score: " + o.Score);
+                }
+            }
+        }
+    }
     private void ViewScoring(List<ScoredOptions> scoredTotalOptions)
     {
         foreach(ScoredOptions so in scoredTotalOptions)

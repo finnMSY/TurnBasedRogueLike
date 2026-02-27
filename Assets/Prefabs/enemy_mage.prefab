@@ -59,7 +59,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6476112596416292826}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 1.155391, y: 5.894724, z: 0.094793536}
   m_LocalScale: {x: 1.5, y: 1.5, z: 1}
   m_ConstrainProportionsScale: 0
@@ -131,7 +131,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a845fb0236df042e3894fbb62031faca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  numActions: 2
+  numActions: 3
   flashDuration: 0.1
   deathAnim: {fileID: 3664705148797248096, guid: b9bf685ea8356d84091b2eb2731e90cb, type: 3}
   enemyType: 2

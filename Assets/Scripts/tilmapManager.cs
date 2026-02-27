@@ -15,6 +15,7 @@ public class tilemapManager : MonoBehaviour
         foreach (tilemapGenerator gen in tilemapGenerators) {
             totalTiles.AddRange(gen.getTiles());
         }
+
         AddNeighbours(totalTiles);
         players.GetComponent<characterController>().enabled = true;
 

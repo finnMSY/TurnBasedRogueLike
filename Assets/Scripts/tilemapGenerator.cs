@@ -16,12 +16,11 @@ public class tilemapGenerator : MonoBehaviour
     }
 
     // Start is called before the first frame update
-    void Start() {
+    void Awake() {
         bounds = tilemap.cellBounds;
 
         TileBase[] tiles = tilemap.GetTilesBlock(bounds);
 
-        // removeTile(new Vector3Int(2, -1, 0));
         for (int x = bounds.xMin; x < bounds.xMax; x++) {
             for (int y = bounds.yMin; y < bounds.yMax; y++) {
                 TileBase selectedTile = getTile(new Vector3Int(x, y, 0));
@@ -29,11 +28,14 @@ public class tilemapGenerator : MonoBehaviour
                     Vector3Int position = new Vector3Int(x, y, 0);
                     List<Tile> neighbours = new List<Tile>();
                     Tile tileObject = new Tile(position, selectedTile, tilesOccupied, neighbours);
-                    // Debug.Log(transform.name + tileObject.occupied);
+    
                     allTiles.Add(tileObject);
                 }
             } 
         }
+    }
+
+    void Start() {
         tilemapManager tileManager = gameObject.transform.parent.GetComponent<tilemapManager>();
         if (tileManager.enabled == false) {
             tileManager.enabled = true;
@@ -41,13 +43,10 @@ public class tilemapGenerator : MonoBehaviour
     }
 
     public TileBase getTile(Vector3Int pos) {
-        return(tilemap.GetTile(pos));
+        return tilemap.GetTile(pos);
     }
 
     public List<Tile> getTiles() {   
-        foreach(Tile t in allTiles) {
-            //Debug.Log(t.occupied);
-        }
-        return (allTiles);
+        return allTiles;
     }
 }
