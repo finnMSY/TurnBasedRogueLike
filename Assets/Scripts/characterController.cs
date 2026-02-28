@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 // TODO:
 // * Add health and attack cooldown to players HUD
@@ -59,7 +60,7 @@ public class characterController : MonoBehaviour {
     public Tile currentTile;
 
     void Start() {
-        currentTile = tilemapManager.FindTile(new Vector3Int(-3, -4, 0));
+        currentTile = tilemapManager.FindTile(turnController.currentRoom.startingTile);
         movePoint.parent = null; 
         currentMovement = new Movement(transform.position, null);
         attack.GetComponent<animationController>().setCurrentCooldown(0);
@@ -272,20 +273,31 @@ public class characterController : MonoBehaviour {
     }
 
     bool isNewTileOccupied(Tile currentTile, Vector3 direction) {
-        Tile newTile;
+        Tile newTile = null;
+        Vector3Int lookupPos = Vector3Int.zero;
+
         if (direction.x == 0) {
-            if (direction.y > 0) {
-                newTile = tilemapManager.FindTile(new Vector3Int(currentTile.position.x, currentTile.position.y + 1));
-            }
-            else {
-                newTile = tilemapManager.FindTile(new Vector3Int(currentTile.position.x, currentTile.position.y - 1));
-            }
+            if (direction.y > 0)
+                lookupPos = new Vector3Int(currentTile.position.x, currentTile.position.y + 1);
+            else
+                lookupPos = new Vector3Int(currentTile.position.x, currentTile.position.y - 1);
         }
-        else if (direction.x > 0) {
-            newTile = tilemapManager.FindTile(new Vector3Int(currentTile.position.x + 1, currentTile.position.y));
-        }
-        else {
-            newTile = tilemapManager.FindTile(new Vector3Int(currentTile.position.x - 1, currentTile.position.y));
+        else if (direction.x > 0)
+            lookupPos = new Vector3Int(currentTile.position.x + 1, currentTile.position.y);
+        else
+            lookupPos = new Vector3Int(currentTile.position.x - 1, currentTile.position.y);
+
+        newTile = tilemapManager.FindTile(lookupPos);
+
+        if (newTile == null) {
+            Debug.Log($"FindTile returned null!" +
+                $"\n  Looking for: {lookupPos}" +
+                $"\n  currentTile: {currentTile.position}" +
+                $"\n  direction: {direction}" +
+                $"\n  tilemapManager: {tilemapManager?.name ?? "NULL"}" +
+                $"\n  tileCount: {tilemapManager?.getTilesList().Count ?? -1}" +
+                $"\n  First 3 tiles: {string.Join(", ", tilemapManager?.getTilesList().GetRange(0, Mathf.Min(3, tilemapManager.getTilesList().Count)).Select(t => t.position))}");
+            return true;
         }
 
         return newTile.occupied;

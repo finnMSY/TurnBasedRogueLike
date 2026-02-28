@@ -11,17 +11,42 @@ public class tilemapManager : MonoBehaviour
     public GameObject enemies;
     public GameObject players;
 
-    void Start() {
+    void Awake() {
+        InitialiseTiles();
+    }
+
+    public void InitialiseTiles() {
+        if (totalTiles.Count > 0) return; // prevent double-init
+
         foreach (tilemapGenerator gen in tilemapGenerators) {
             totalTiles.AddRange(gen.getTiles());
         }
+        Debug.Log(totalTiles.Count);
 
         AddNeighbours(totalTiles);
+    }
+
+    void Start() {
         players.GetComponent<characterController>().enabled = true;
 
         foreach(Transform child in enemies.transform) {
             child.GetComponent<enemyController>().enabled = true;
         }
+
+        roomController roomController = gameObject.GetComponent<roomController>();
+        foreach(Transform door in roomController.doors.transform) {
+            door.GetComponent<door>().enabled = true;
+        }
+    }
+
+   public void SwtichTileObstacleStatus(Vector3Int tileCoords, bool setToOccupied)
+    {
+        Tile tile = FindTile(tileCoords);
+        if (tile == null)
+        {
+            Debug.LogWarning($"SwtichTileObstacleStatus: tile {tileCoords} not found.");
+        }
+        tile.occupied = setToOccupied;
     }
 
     void AddNeighbours(List<Tile> tiles) {
@@ -35,7 +60,6 @@ public class tilemapManager : MonoBehaviour
             AddNeighbouringTile(new Vector3Int(position.x - 1, position.y, position.z), neighbours);
             tile.setNeighbours(neighbours);
         }
-        
     }
 
     void AddNeighbouringTile(Vector3Int position, List<Tile> neighbours) { 

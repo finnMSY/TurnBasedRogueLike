@@ -11,21 +11,40 @@ public class gameController : MonoBehaviour
     [HideInInspector]
     public int remainingActions; 
     bool playersTurn = true;
-    public List<MoveSet> moveSets = new List<MoveSet>();
     
     private List<enemyController> enemies = new List<enemyController>();
+    private List<Room> rooms = new List<Room>();
     private int currentEnemyIndex = 0;
+    public roomController currentRoom;
 
-    void Start()
+    void Awake()
     {
         remainingActions = maxActions;
         actionCounter.text = remainingActions.ToString();
+
+        GameObject[] roomObjects = GameObject.FindGameObjectsWithTag("Room");
+        foreach (GameObject roomObject in roomObjects)
+        {
+            Room room = roomObject.GetComponent<roomController>().createRoom(true, true);
+            rooms.Add(room);
+        }
     }
 
     void Update()
     {
         if (actionCounter.text != remainingActions.ToString() && remainingActions >= 0) {
             actionCounter.text = remainingActions.ToString();
+        }
+    }
+
+    private void EndOfRoom()
+    {
+        foreach (Room room in rooms)
+        {
+            if (room.IsCurrent && room.IsActive)
+            {
+                room.OpenDoors();
+            }
         }
     }
 
@@ -51,7 +70,8 @@ public class gameController : MonoBehaviour
                 enemies[0].startTurn();
             } else {
                 // No enemies, go back to player
-                Debug.Log("No enemies found, returning to player turn");
+                Debug.Log("All enemies defeated.");
+                EndOfRoom();
                 startPlayerTurn();
             }
         } 
