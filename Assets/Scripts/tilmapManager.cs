@@ -8,20 +8,22 @@ public class tilemapManager : MonoBehaviour
     public List<tilemapGenerator> tilemapGenerators;
 
     public List<Tile> totalTiles = new List<Tile>();
-    public GameObject enemies;
-    public GameObject players;
+    GameObject enemies;
+    GameObject players;
 
     void Awake() {
         InitialiseTiles();
+        enemies = GameObject.Find("Enemies");
+        players = GameObject.FindWithTag("Player");
     }
 
     public void InitialiseTiles() {
-        if (totalTiles.Count > 0) return; // prevent double-init
+        if (totalTiles.Count > 0) return;
 
         foreach (tilemapGenerator gen in tilemapGenerators) {
+            gen.GenerateTiles();
             totalTiles.AddRange(gen.getTiles());
         }
-        Debug.Log(totalTiles.Count);
 
         AddNeighbours(totalTiles);
     }
@@ -39,12 +41,14 @@ public class tilemapManager : MonoBehaviour
         }
     }
 
-   public void SwtichTileObstacleStatus(Vector3Int tileCoords, bool setToOccupied)
+    public void SwtichTileObstacleStatus(Vector3Int tileCoords, bool setToOccupied)
     {
         Tile tile = FindTile(tileCoords);
+
         if (tile == null)
         {
             Debug.LogWarning($"SwtichTileObstacleStatus: tile {tileCoords} not found.");
+            return;
         }
         tile.occupied = setToOccupied;
     }
@@ -70,7 +74,7 @@ public class tilemapManager : MonoBehaviour
     }
 
     public List<Tile> getTilesList() {
-        return(totalTiles);
+        return totalTiles;
     }
 
     public Tile FindTile(Vector3Int position) {

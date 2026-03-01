@@ -226,19 +226,25 @@ public class enemyController : MonoBehaviour {
 
     private IEnumerator startTurnCourutine()
     {   
+        yield return null;
+
         // Generate list of total options. (potentially make it a list instead of a dict?)
         Dictionary<int, ActionableOptions> totalOptions = GetTotalOptions(currentTile, numActions, list_of_abilties);
+        yield return null;
 
         // Assign points to all options
         List<Tile> quickestPath = findQuickestPath(currentTile, playerController.currentTile);
         List<ScoredOptions> scoredTotalOptions = AssignMovementPoints(totalOptions, quickestPath);
+        yield return null;
         // ViewScoring(scoredTotalOptions);
 
         // Find best combination of options
         List<Options> totalOptionPermutations = GetTotalOptionPermutations(scoredTotalOptions);
+        yield return null;
         // ViewPermutations(totalOptionPermutations);
 
         List<Options> bestOptions = GetHighestScoreOptionOrder(totalOptionPermutations);
+        yield return null;
         // ViewBestOptions(bestOptions);
 
         // Execute moves/abilities
@@ -286,7 +292,7 @@ public class enemyController : MonoBehaviour {
         {
             if (option.isMovement())
             {
-                Debug.Log("Moving from: " + option.MovementOption.Value.Key.position + " to: " + option.MovementOption.Value.Value.position);
+                // Debug.Log("Moving from: " + option.MovementOption.Value.Key.position + " to: " + option.MovementOption.Value.Value.position);
                 yield return StartCoroutine(moveEnemyRoutine(option.MovementOption.Value.Value));
             }
             else
@@ -461,7 +467,7 @@ public class enemyController : MonoBehaviour {
 
     public void takeDamage(int damage)
     {
-        Debug.Log($"Dealt {damage} damage!");
+        // Debug.Log($"Dealt {damage} damage!");
         health -= damage;
 
         if (health <= 0)
@@ -493,7 +499,7 @@ public class enemyController : MonoBehaviour {
 
     private void Attack(enemyAbility ability, int damageAmount)
     {
-        Debug.Log($"Use {ability.name} for {damageAmount} damage.");
+        // Debug.Log($"Use {ability.name} for {damageAmount} damage.");
         currentActions = currentActions - ability.actionsRequired;
         
         Vector3 direction = (playerObject.transform.position - transform.position).normalized;

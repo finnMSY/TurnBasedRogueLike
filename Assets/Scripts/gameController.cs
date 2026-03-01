@@ -11,21 +11,26 @@ public class gameController : MonoBehaviour
     [HideInInspector]
     public int remainingActions; 
     bool playersTurn = true;
-    
+    public GameObject[] roomObjects;
+    public bool isTransitioning = false;
     private List<enemyController> enemies = new List<enemyController>();
-    private List<Room> rooms = new List<Room>();
+    public List<Room> rooms = new List<Room>();
     private int currentEnemyIndex = 0;
     public roomController currentRoom;
+    public GameObject startingRoom; 
+
+    public List<Room> visitedRooms;
 
     void Awake()
     {
         remainingActions = maxActions;
         actionCounter.text = remainingActions.ToString();
+        visitedRooms = new List<Room>();
+        visitedRooms.Add(currentRoom.createRoom(true, true, startingRoom));
 
-        GameObject[] roomObjects = GameObject.FindGameObjectsWithTag("Room");
         foreach (GameObject roomObject in roomObjects)
         {
-            Room room = roomObject.GetComponent<roomController>().createRoom(true, true);
+            Room room = roomObject.GetComponent<roomController>().createRoom(false, false, roomObject);
             rooms.Add(room);
         }
     }
@@ -37,9 +42,31 @@ public class gameController : MonoBehaviour
         }
     }
 
+    void AddVisitedRoom(Room room)
+    {
+        visitedRooms.Add(room);
+    }
+
+    public Room PickRoom()
+    {
+        List<Room> newRoomList = new List<Room>();
+        foreach (Room room in rooms)
+        {
+            if (!visitedRooms.Contains(room))
+            {
+                newRoomList.Add(room);
+            }
+        } 
+
+        int randomIndex = Random.Range(0, newRoomList.Count - 1);
+        Room randomRoom = newRoomList[randomIndex];
+        AddVisitedRoom(randomRoom);
+        return randomRoom;
+    }
+
     private void EndOfRoom()
     {
-        foreach (Room room in rooms)
+        foreach (Room room in visitedRooms)
         {
             if (room.IsCurrent && room.IsActive)
             {
@@ -50,10 +77,8 @@ public class gameController : MonoBehaviour
 
     public void endOfTurn() {
         if (playersTurn) {
-            // Player's turn is over, start enemy turns
             playersTurn = false;
             
-            // Find all enemies
             enemies.Clear();
             GameObject[] enemyObjects = GameObject.FindGameObjectsWithTag("Enemy");
             foreach (GameObject enemy in enemyObjects) {
@@ -63,29 +88,20 @@ public class gameController : MonoBehaviour
                 }
             }
             
-            // Start first enemy's turn
             currentEnemyIndex = 0;
             if (enemies.Count > 0) {
-                Debug.Log($"Starting turn for enemy {currentEnemyIndex + 1} of {enemies.Count}");
                 enemies[0].startTurn();
             } else {
-                // No enemies, go back to player
-                Debug.Log("All enemies defeated.");
                 EndOfRoom();
                 startPlayerTurn();
             }
         } 
         else {
-            // An enemy's turn just ended
             currentEnemyIndex++;
             
             if (currentEnemyIndex < enemies.Count) {
-                // Start next enemy's turn
-                Debug.Log($"Starting turn for enemy {currentEnemyIndex + 1} of {enemies.Count}");
                 enemies[currentEnemyIndex].startTurn();
             } else {
-                // All enemies done, back to player
-                Debug.Log("All enemies finished, returning to player turn");
                 startPlayerTurn();
             }
         }

@@ -11,34 +11,29 @@ public class tilemapGenerator : MonoBehaviour
     public bool tilesOccupied;
 
     public void removeTile(Vector3Int pos) {
-        // Debug.Log(pos);
         tilemap.SetTile(pos, null);
-    }
-
-    // Start is called before the first frame update
-    void Awake() {
-        bounds = tilemap.cellBounds;
-
-        TileBase[] tiles = tilemap.GetTilesBlock(bounds);
-
-        for (int x = bounds.xMin; x < bounds.xMax; x++) {
-            for (int y = bounds.yMin; y < bounds.yMax; y++) {
-                TileBase selectedTile = getTile(new Vector3Int(x, y, 0));
-                if (selectedTile != null) {
-                    Vector3Int position = new Vector3Int(x, y, 0);
-                    List<Tile> neighbours = new List<Tile>();
-                    Tile tileObject = new Tile(position, selectedTile, tilesOccupied, neighbours);
-    
-                    allTiles.Add(tileObject);
-                }
-            } 
-        }
     }
 
     void Start() {
         tilemapManager tileManager = gameObject.transform.parent.GetComponent<tilemapManager>();
         if (tileManager.enabled == false) {
             tileManager.enabled = true;
+        }
+    }
+
+    public void GenerateTiles() {
+        if (allTiles.Count > 0) return;
+
+        bounds = tilemap.cellBounds;
+        for (int x = bounds.xMin; x < bounds.xMax; x++) {
+            for (int y = bounds.yMin; y < bounds.yMax; y++) {
+                TileBase selectedTile = getTile(new Vector3Int(x, y, 0));
+                if (selectedTile != null) {
+                    Vector3Int position = new Vector3Int(x, y, 0);
+                    Tile tileObject = new Tile(position, selectedTile, tilesOccupied, new List<Tile>());
+                    allTiles.Add(tileObject);
+                }
+            } 
         }
     }
 

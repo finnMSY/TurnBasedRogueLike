@@ -71,7 +71,7 @@ public class characterController : MonoBehaviour {
 
     public void takeDamage(int damage)
     {
-        Debug.Log($"Got hit by {damage} damage!");
+        // Debug.Log($"Got hit by {damage} damage!");
         health -= damage;
 
         if (health <= 0)
@@ -221,6 +221,17 @@ public class characterController : MonoBehaviour {
         }
     }
 
+    private void endOfTurn() {
+        myTurn = false;
+        isTurnEnding = false;
+        StartCoroutine(deferredEndOfTurn());
+    }
+
+    private IEnumerator deferredEndOfTurn() {
+        yield return null;
+        turnController.endOfTurn();
+    }
+
     void Attack()
     {
         // Debug.Log(attack.GetComponent<animationController>().getCurrentCooldown());
@@ -273,6 +284,11 @@ public class characterController : MonoBehaviour {
     }
 
     bool isNewTileOccupied(Tile currentTile, Vector3 direction) {
+
+        if (currentTile == null) {
+            Debug.LogError("currentTile is null in isNewTileOccupied!");
+            return true;    
+        }
         Tile newTile = null;
         Vector3Int lookupPos = Vector3Int.zero;
 
@@ -303,9 +319,14 @@ public class characterController : MonoBehaviour {
         return newTile.occupied;
     }
 
-    private void Move(Vector3 direction) {
+    public void Move(Vector3 direction) {
         Vector3 newPosition = movePoint.position + direction;
         
+        if (currentTile == null) {
+            Debug.LogError("currentTile is null, cannot move!");
+            return;
+        }
+
         if (currentMovement.previousMovement == null || currentMovement.previousMovement.position != newPosition) {
             if (turnController.canUseAction(actionsPerMovement)) {
 
@@ -337,12 +358,6 @@ public class characterController : MonoBehaviour {
                 setCurrentTile(currentTile, direction);
             }
         }
-    }
-    
-    private void endOfTurn() {
-        myTurn = false;
-        isTurnEnding = false;
-        turnController.endOfTurn();
     }
 
     private void Flip() {
