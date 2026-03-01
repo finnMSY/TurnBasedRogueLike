@@ -31,7 +31,6 @@ public class cameraController : MonoBehaviour
 
     public void StartMoveCamera(Transform trans)
     {
-        Debug.Log("Moving camera");
         cameraTarget = trans.position;
         isMoving = true;
     }

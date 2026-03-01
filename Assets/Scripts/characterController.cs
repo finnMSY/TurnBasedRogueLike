@@ -56,7 +56,7 @@ public class characterController : MonoBehaviour {
 
     public gameController turnController;
     private Movement currentMovement;
-    private bool myTurn = true;
+    public bool myTurn = true;
     public Tile currentTile;
 
     void Start() {
@@ -163,7 +163,7 @@ public class characterController : MonoBehaviour {
                     endOfTurn();
                 }
 
-                if (Input.GetButtonDown("Horizontal") && !isAiming) {
+                if (Input.GetButtonDown("Horizontal") && !isAiming && !turnController.isTransitioning) {
                     float horizontalInput = Input.GetAxisRaw("Horizontal");
 
                     if (horizontalInput > 0 && facingLeft) {
@@ -175,7 +175,7 @@ public class characterController : MonoBehaviour {
 
                     Move(new Vector3(horizontalInput * moveDistance, 0, 0));
                 }
-                else if (Input.GetButtonDown("Vertical") && !isAiming) {
+                else if (Input.GetButtonDown("Vertical") && !isAiming && !turnController.isTransitioning) {
                     float verticalInput = Input.GetAxisRaw("Vertical");
                     Move(new Vector3(0, verticalInput * moveDistance, 0));
                 }

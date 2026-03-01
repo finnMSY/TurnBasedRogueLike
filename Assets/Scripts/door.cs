@@ -15,11 +15,14 @@ class DoorTransition
 {
     public List<Room> Rooms { get; }
 
-    public DoorTransition(Room currentRoom, Room destinationRoom)
+    public bool IsOpen { get; set; }
+
+    public DoorTransition(Room currentRoom, Room destinationRoom, bool isOpen)
     {
         Rooms = new List<Room>();
         Rooms.Add(currentRoom);
         Rooms.Add(destinationRoom);
+        IsOpen = isOpen;
     }
 }
 
@@ -49,7 +52,13 @@ public class door : MonoBehaviour
         tileManager = gameObject.transform.parent.gameObject.transform.parent.gameObject.GetComponent<tilemapManager>();
         room = gameObject.transform.parent.gameObject.transform.parent.gameObject;
 
-        tileManager.SwtichTileObstacleStatus(currentTile, true);
+        if (doorTransition != null && doorTransition.IsOpen) {
+            tileManager.SwitchTileObstacleStatus(currentTile, false);
+        }
+        else
+        {
+            tileManager.SwitchTileObstacleStatus(currentTile, true);
+        }
         gameController = room.GetComponent<roomController>().gameController;
     }
 
@@ -61,7 +70,7 @@ public class door : MonoBehaviour
     public void Open()
     {
         this.gameObject.GetComponent<SpriteRenderer>().enabled = false;
-        tileManager.SwtichTileObstacleStatus(currentTile, false);
+        tileManager.SwitchTileObstacleStatus(currentTile, false);
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -112,7 +121,7 @@ public class door : MonoBehaviour
         if (doorTransition == null)
         {
             destinationRoom = gameController.PickRoom();
-            doorTransition = new DoorTransition(GetCurrentRoom(), destinationRoom);
+            doorTransition = new DoorTransition(GetCurrentRoom(), destinationRoom, true);
         }
         else
         {
@@ -124,11 +133,14 @@ public class door : MonoBehaviour
                 }
             }
         }
+
         Vector3 roomPosition = GetRoomPos(direction);
         GameObject newRoom = Instantiate(destinationRoom.obj, roomPosition, Quaternion.identity);
         instantiatedRoom = newRoom;
         newRoom.transform.parent = GameObject.Find("Rooms").transform;
         gameController.currentRoom = newRoom.GetComponent<roomController>();
+
+        tileManager.SwitchTileObstacleStatus(currentTile, false);
 
         Direction oppDirection = GetOppositeDirection(direction);
         door[] newRoomDoors = newRoom.GetComponentsInChildren<door>();
@@ -144,7 +156,28 @@ public class door : MonoBehaviour
         newRoom.SetActive(true);
         Transform newPoint = newRoom.GetComponent<roomController>().cameraPoint.transform;
         activeCamera.StartMoveCamera(newPoint);
+
+        MovePlayer();
+
         transitioning = true;
+    }
+
+    void MovePlayer()
+    {
+        tilemapManager destinationTileManager = instantiatedRoom.GetComponent<tilemapManager>();
+        destinationTileManager.InitialiseTiles();
+
+        Tile startingTile = destinationTileManager.FindTile(destinationDoor.currentTile);
+        if (startingTile == null)
+        {
+            Debug.LogError($"Could not find spawn tile in {destinationRoom.Name}.");
+            return;
+        }
+
+        characterController player = FindObjectOfType<characterController>();
+        player.tilemapManager = destinationTileManager;
+        player.currentTile = startingTile;
+        player.Move(GetDirectionVector());
     }
 
     Vector3 GetDirectionVector()
@@ -169,23 +202,7 @@ public class door : MonoBehaviour
 
     void Transition()
     {
-        tilemapManager destinationTileManager = instantiatedRoom.GetComponent<tilemapManager>();
-        destinationTileManager.InitialiseTiles();
-
-        roomController destinationRoomController = instantiatedRoom.GetComponent<roomController>();
-        Tile startingTile = destinationTileManager.FindTile(destinationDoor.currentTile);
-        if (startingTile == null)
-        {
-            Debug.LogError($"Could not find spawn tile in {destinationRoom.Name}.");
-            return;
-        }
-
-        characterController player = FindObjectOfType<characterController>();
-        player.tilemapManager = destinationTileManager;
-        player.currentTile = startingTile;
-        player.Move(GetDirectionVector());
-
-        // Update IsCurrent before destroying the old room
+        // Handle room cleanup once camera has arrived
         Room oldRoom = GetCurrentRoom();
         if (oldRoom != null) oldRoom.IsCurrent = false;
         destinationRoom.IsCurrent = true;

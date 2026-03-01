@@ -41,13 +41,13 @@ public class tilemapManager : MonoBehaviour
         }
     }
 
-    public void SwtichTileObstacleStatus(Vector3Int tileCoords, bool setToOccupied)
+    public void SwitchTileObstacleStatus(Vector3Int tileCoords, bool setToOccupied)
     {
         Tile tile = FindTile(tileCoords);
 
         if (tile == null)
         {
-            Debug.LogWarning($"SwtichTileObstacleStatus: tile {tileCoords} not found.");
+            Debug.LogWarning($"SwitchTileObstacleStatus: tile {tileCoords} not found.");
             return;
         }
         tile.occupied = setToOccupied;
