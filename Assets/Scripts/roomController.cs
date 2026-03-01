@@ -25,7 +25,10 @@ public class Room
         IsActive = false;
         foreach (door d in Doors)
         {
-            d.Open();
+            if (d != null && d.gameObject != null)
+            {
+                d.Open();
+            }
         }
     }
 }
@@ -33,8 +36,10 @@ public class Room
 public class roomController : MonoBehaviour
 {
     public GameObject doors;
+    public bool roomIsActive;
     public GameObject cameraPoint;
     public Vector3Int startingTile;
+    public GameObject enemies;
     
     [HideInInspector]
     public gameController gameController;
@@ -43,6 +48,18 @@ public class roomController : MonoBehaviour
     {
         name = gameObject.name;
         gameController = GameObject.FindWithTag("GameController").GetComponent<gameController>();
+
+        if (!roomIsActive)
+        {
+            Debug.Log("Enemies don't spawn");
+            enemies.SetActive(false);
+        }
+    }
+
+    public void SetCleared()
+    {
+        roomIsActive = false;
+        enemies.SetActive(false);
     }
 
     public Room createRoom(bool isCurrent, bool isActive, GameObject prefabOverride = null)

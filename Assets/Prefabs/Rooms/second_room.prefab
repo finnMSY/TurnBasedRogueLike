@@ -1069,6 +1069,37 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tilemap: {fileID: 4548207847560836427}
   tilesOccupied: 1
+--- !u!1 &2478080815636222580
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 445589690167786235}
+  m_Layer: 0
+  m_Name: Enemies
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &445589690167786235
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2478080815636222580}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -1.9330215, y: -6.102398, z: 0.008108318}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 760077614817644963}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2905684659085689658
 GameObject:
   m_ObjectHideFlags: 0
@@ -3183,6 +3214,7 @@ Transform:
   - {fileID: 5726701935832233679}
   - {fileID: 5798935748847231594}
   - {fileID: 1772308969455025591}
+  - {fileID: 445589690167786235}
   - {fileID: 8870931937379424113}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -3227,9 +3259,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   doors: {fileID: 398567208409193645}
-  camera: {fileID: 3772977732973575967, guid: 0a62fd858ff154f44a048add9eadddb8, type: 3}
+  isActive: 1
   cameraPoint: {fileID: 6824422926179649660}
   startingTile: {x: -2, y: -7, z: 0}
+  enemies: {fileID: 2478080815636222580}
   gameController: {fileID: 0}
 --- !u!1 &7593545307279269407
 GameObject:

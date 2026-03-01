@@ -181,15 +181,15 @@ public class characterController : MonoBehaviour {
                 }
             }
 
-            if (Input.GetButtonDown("Submit")) {
+            if (Input.GetButtonDown("Submit") && !turnController.isTransitioning) {
                 isTurnEnding = true;
             }
 
-            if (Input.GetButtonDown("Attack")) {
+            if (Input.GetButtonDown("Attack") && !turnController.isTransitioning) {
                 canAim = true;
             }
 
-            if (Input.GetButton("Attack") && canAim) {
+            if (Input.GetButton("Attack") && canAim && !turnController.isTransitioning) {
                 isAiming = true;
                 nearestPoint = findNearestPointPos();
 
@@ -201,7 +201,7 @@ public class characterController : MonoBehaviour {
                 attackRangeObject = Instantiate(newPrefab, new Vector2(nearestPoint.position.x, Round2F(nearestPoint.position.y)), Quaternion.identity, transform);
             }
 
-            if (Input.GetButtonUp("Attack") && isAiming) {
+            if (Input.GetButtonUp("Attack") && isAiming && !turnController.isTransitioning) {
                 if (turnController.canUseAction(actionsPerAttack)) {
                     Attack();
                 }
@@ -213,7 +213,7 @@ public class characterController : MonoBehaviour {
 
             }
 
-            if (Input.GetButtonDown("Cancel")) {
+            if (Input.GetButtonDown("Cancel") && !turnController.isTransitioning) {
                 stopAiming(false);
                 Destroy(attackRangeObject);
                 canAim = false;
@@ -317,6 +317,11 @@ public class characterController : MonoBehaviour {
         }
 
         return newTile.occupied;
+    }
+
+    public void ResetMovementHistory()
+    {
+        currentMovement = new Movement(transform.position, null);
     }
 
     public void Move(Vector3 direction) {

@@ -5,7 +5,7 @@ using TMPro;
 
 public class gameController : MonoBehaviour
 {
-    public int maxActions = 3;
+    public int maxActions;
     public TextMeshProUGUI actionCounter;
     
     [HideInInspector]
@@ -66,12 +66,22 @@ public class gameController : MonoBehaviour
 
     private void EndOfRoom()
     {
+        currentRoom.SetCleared();
         foreach (Room room in visitedRooms)
         {
-            if (room.IsCurrent && room.IsActive)
+            if (room.IsCurrent)
             {
+                room.IsActive = false;
                 room.OpenDoors();
             }
+        }
+    }
+
+    public void OnRoomEnter(roomController room)
+    {
+        if (!room.roomIsActive)
+        {
+            room.enemies.SetActive(false);
         }
     }
 

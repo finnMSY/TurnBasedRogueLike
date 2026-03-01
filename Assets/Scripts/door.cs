@@ -49,14 +49,17 @@ public class door : MonoBehaviour
 
     void Start()
     {
-        tileManager = gameObject.transform.parent.gameObject.transform.parent.gameObject.GetComponent<tilemapManager>();
+        tileManager = GetTileManager();
         room = gameObject.transform.parent.gameObject.transform.parent.gameObject;
 
         if (doorTransition != null && doorTransition.IsOpen) {
             tileManager.SwitchTileObstacleStatus(currentTile, false);
+            gameObject.GetComponent<SpriteRenderer>().enabled = false;
+            room.GetComponent<roomController>().roomIsActive = false;
         }
         else
         {
+            room.GetComponent<roomController>().roomIsActive = true;
             tileManager.SwitchTileObstacleStatus(currentTile, true);
         }
         gameController = room.GetComponent<roomController>().gameController;
@@ -67,10 +70,23 @@ public class door : MonoBehaviour
         return room.GetComponent<roomController>().getCurrentRoom();
     }
 
+    tilemapManager GetTileManager()
+    {
+        if (tileManager == null)
+            tileManager = gameObject.transform.parent.gameObject.transform.parent.gameObject.GetComponent<tilemapManager>();
+        return tileManager;
+    }
+
     public void Open()
     {
-        this.gameObject.GetComponent<SpriteRenderer>().enabled = false;
-        tileManager.SwitchTileObstacleStatus(currentTile, false);
+        SpriteRenderer sr = this.gameObject.GetComponent<SpriteRenderer>();
+        if (sr != null) sr.enabled = false;
+
+        tilemapManager tm = GetTileManager();
+        if (tm != null)
+            tm.SwitchTileObstacleStatus(currentTile, false);
+        else
+            Debug.LogWarning($"tileManager not found on door {gameObject.name}, skipping tile switch.");
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -115,6 +131,8 @@ public class door : MonoBehaviour
 
     void StartTransition()
     {
+        gameController.actionCounter.enabled = false;
+        gameController.remainingActions = gameController.maxActions + 1;
         gameController.isTransitioning = true;
         activeCamera = FindObjectOfType<cameraController>();
 
@@ -138,7 +156,11 @@ public class door : MonoBehaviour
         GameObject newRoom = Instantiate(destinationRoom.obj, roomPosition, Quaternion.identity);
         instantiatedRoom = newRoom;
         newRoom.transform.parent = GameObject.Find("Rooms").transform;
-        gameController.currentRoom = newRoom.GetComponent<roomController>();
+
+        // Set roomIsActive BEFORE Start() fires so enemies don't respawn in cleared rooms
+        roomController newRoomController = newRoom.GetComponent<roomController>();
+        newRoomController.roomIsActive = destinationRoom.IsActive;
+        gameController.currentRoom = newRoomController;
 
         tileManager.SwitchTileObstacleStatus(currentTile, false);
 
@@ -178,6 +200,8 @@ public class door : MonoBehaviour
         player.tilemapManager = destinationTileManager;
         player.currentTile = startingTile;
         player.Move(GetDirectionVector());
+
+        player.ResetMovementHistory();
     }
 
     Vector3 GetDirectionVector()
@@ -219,6 +243,7 @@ public class door : MonoBehaviour
             Transition();
             gameController.isTransitioning = false;
             transitioning = false;
+            gameController.actionCounter.enabled = true;
         }
     }
 }
