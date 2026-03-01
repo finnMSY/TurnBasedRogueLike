@@ -11,24 +11,14 @@ public class cameraController : MonoBehaviour
 
     private Vector3 cameraTarget;
     public bool isMoving = false;
-
-    private Vector3 lastPosition;
-
     void Start()
     {
-        isMoving = false; // force reset regardless of Inspector value
-        cameraTarget = transform.position; // also safe-initialize target to current pos
-        lastPosition = transform.position;
+        isMoving = false;
+        cameraTarget = transform.position;
     }
 
     void Update()
     {
-        if (transform.position != lastPosition)
-        {
-            Debug.Log("Camera moved to: " + transform.position + "\n" + System.Environment.StackTrace);
-            lastPosition = transform.position;
-        }
-
         if (isMoving)
         {
             bool arrived = moveCamera(cameraTarget);
