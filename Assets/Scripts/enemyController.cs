@@ -45,6 +45,8 @@ public class enemyController : MonoBehaviour {
     private Tile currentTile;
     private Transform movePoint;
 
+    float abilityAngle; 
+
     private void Start() 
     {
         // Initialize variables from objects in Scene
@@ -81,6 +83,11 @@ public class enemyController : MonoBehaviour {
         {
             currentTile.occupied = true;
         }
+    }
+
+    public float GetAbilityAngle()
+    {
+        return abilityAngle;
     }
     
     public void startTurn()
@@ -503,8 +510,11 @@ public class enemyController : MonoBehaviour {
         currentActions = currentActions - ability.actionsRequired;
         
         Vector3 direction = (playerObject.transform.position - transform.position).normalized;
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + 90f;
-        Quaternion rotation = Quaternion.Euler(new Vector3(0, 0, angle));
+        abilityAngle = Vector2.SignedAngle(Vector2.up, direction) + 180f;
+        Debug.Log(abilityAngle);
+
+
+        Quaternion rotation = Quaternion.Euler(new Vector3(0, 0, abilityAngle));
 
         attackObject = Instantiate(ability.gameObject, transform.position, Quaternion.identity * rotation, transform);
     }

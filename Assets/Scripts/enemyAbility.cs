@@ -20,27 +20,31 @@ public class enemyAbility : MonoBehaviour
     Vector3 direction;
     Vector3 move;
     GameObject playerObject;
+    GameObject parentObject;
     float angle;
 
     void Start()
     {
+        parentObject = this.gameObject.transform.parent.gameObject;
+        this.gameObject.transform.parent = null;
+
         playerObject = GameObject.FindGameObjectWithTag("Player");
         direction = (playerObject.transform.position - transform.position).normalized;
-        angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + 90f;
+        angle = parentObject.GetComponent<enemyController>().GetAbilityAngle();
         current_cooldown = 0;
     }
 
     void Update()
     {
-        if (angle == 180f)
+        if (angle > 135f && angle < 225f)
         {
             move = transform.up;
         }
-        else if (angle == 270f)
+        else if (angle > 225f && angle < 315f)
         {
             move = transform.right;
         }
-        else if (angle == 90f)
+        else if (angle > 45f && angle < 135f)
         {
             move = -transform.right;
         }
@@ -59,10 +63,14 @@ public class enemyAbility : MonoBehaviour
             other.gameObject.GetComponent<characterController>().takeDamage(damage);
             destroySelf();
         }
-        else if (other.tag == "Enemy")
+        else if (other.tag == "Enemy" && other.gameObject != parentObject)
         {
             other.gameObject.GetComponent<enemyController>().takeDamage(damage);
             destroySelf();
+        }
+        else if (other.tag == "Obstacle")
+        {
+            Debug.Log("Hit obstacle");
         }
     }
 
