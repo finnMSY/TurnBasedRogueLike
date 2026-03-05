@@ -58,15 +58,33 @@ public class characterController : MonoBehaviour {
     private Movement currentMovement;
     public bool myTurn = true;
     public Tile currentTile;
+    public Vector3Int currentTileInt;
+    public Vector3Int startingTile;
 
     void Start() {
-        currentTile = tilemapManager.FindTile(turnController.currentRoom.startingTile);
+        currentTile = tilemapManager.FindTile(startingTile);
         movePoint.parent = null; 
         currentMovement = new Movement(transform.position, null);
         attack.GetComponent<animationController>().setCurrentCooldown(0);
 
         spriteRenderer = GetComponent<SpriteRenderer>();
         originalColor = spriteRenderer.color;
+    }
+
+    private void OnValidate()
+    {   
+        if (tilemapManager == null) return;
+        Vector3 parentPos = tilemapManager.gameObject.transform.position;
+
+        float xConst = 0.65f;
+        float yConst = 0.9f;
+        float zConst = 0f;
+
+        this.transform.position = new Vector3(
+            parentPos.x + (startingTile.x * 1.5f) + xConst,
+            parentPos.y + (startingTile.y * 1.5f) + yConst,
+            parentPos.z + startingTile.z + zConst
+        );
     }
 
     public void takeDamage(int damage)
@@ -152,6 +170,7 @@ public class characterController : MonoBehaviour {
     }
 
     void Update() {
+        currentTileInt = currentTile.position;
         if (myTurn) {
             // actionsPerAttack = Mathf.Max(turnController.remainingActions, 1);
             float movementAmount = speed * Time.deltaTime;
@@ -198,7 +217,7 @@ public class characterController : MonoBehaviour {
                 }
 
                 GameObject newPrefab = Resources.Load<GameObject>("AttackRanges/" + nearestPoint.name);
-                attackRangeObject = Instantiate(newPrefab, new Vector2(nearestPoint.position.x, Round2F(nearestPoint.position.y)), Quaternion.identity, transform);
+                attackRangeObject = Instantiate(newPrefab, new Vector2(nearestPoint.position.x + 0.11f, nearestPoint.position.y + 0.34f ), Quaternion.identity, transform);
             }
 
             if (Input.GetButtonUp("Attack") && isAiming && !turnController.isTransitioning) {

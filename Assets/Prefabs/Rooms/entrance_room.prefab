@@ -555,7 +555,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   doors: {fileID: 6131642535061011230}
-  isActive: 1
+  roomIsActive: 0
   cameraPoint: {fileID: 1139269187608027229}
   startingTile: {x: -3, y: -4, z: 0}
   enemies: {fileID: 7292674036766088573}
@@ -3730,15 +3730,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6432672741278523763, guid: c780bd6f6b0842749ab09e2949fbf0b4, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 4.155391
+      value: 4.1499996
       objectReference: {fileID: 0}
     - target: {fileID: 6432672741278523763, guid: c780bd6f6b0842749ab09e2949fbf0b4, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 5.894724
+      value: 5.7999997
       objectReference: {fileID: 0}
     - target: {fileID: 6432672741278523763, guid: c780bd6f6b0842749ab09e2949fbf0b4, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.094793536
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6432672741278523763, guid: c780bd6f6b0842749ab09e2949fbf0b4, type: 3}
       propertyPath: m_LocalRotation.w
@@ -3804,15 +3804,15 @@ PrefabInstance:
       objectReference: {fileID: 6374023996143557666}
     - target: {fileID: 6432672741278523763, guid: c780bd6f6b0842749ab09e2949fbf0b4, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1.155391
+      value: 1.1499996
       objectReference: {fileID: 0}
     - target: {fileID: 6432672741278523763, guid: c780bd6f6b0842749ab09e2949fbf0b4, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 5.894724
+      value: 5.7999997
       objectReference: {fileID: 0}
     - target: {fileID: 6432672741278523763, guid: c780bd6f6b0842749ab09e2949fbf0b4, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.094793536
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6432672741278523763, guid: c780bd6f6b0842749ab09e2949fbf0b4, type: 3}
       propertyPath: m_LocalRotation.w

@@ -203,7 +203,7 @@ public class door : MonoBehaviour
 
         player.ResetMovementHistory();
     }
-
+    
     Vector3 GetDirectionVector()
     {
         if (direction == Direction.North)

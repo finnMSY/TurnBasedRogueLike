@@ -85,6 +85,22 @@ public class enemyController : MonoBehaviour {
         }
     }
 
+    private void OnValidate()
+    {   
+        if (transform.parent == null) return;
+        Vector3 parentPos = this.gameObject.transform.parent.gameObject.transform.position;
+
+        float xConst = -0.35f;
+        float yConst = 2.8f;
+        float zConst = 0f;
+
+        this.transform.position = new Vector3(
+            parentPos.x + (startingTile.x * 1.5f) + xConst,
+            parentPos.y + (startingTile.y * 1.5f) + yConst,
+            parentPos.z + startingTile.z + zConst
+        );
+    }
+
     public float GetAbilityAngle()
     {
         return abilityAngle;

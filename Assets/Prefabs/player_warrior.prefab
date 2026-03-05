@@ -374,13 +374,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 5
   movePoint: {fileID: 5756642762086435113}
+  tilemapManager: {fileID: 0}
   obstacleMask:
     serializedVersion: 2
     m_Bits: 64
   moveDistance: 1.5
   attack: {fileID: 797223055465786794, guid: 642c020cad5f5d647b1b5cd66b7690ba, type: 3}
+  flashDuration: 0.1
   directionPoints: {fileID: 6220480541020399404}
-  animator: {fileID: 0}
+  health: 100
+  actionsPerMovement: 1
+  actionsPerAttack: 0
+  turnController: {fileID: 0}
+  myTurn: 1
+  currentTileInt: {x: 0, y: 0, z: 0}
+  startingTile: {x: 0, y: 0, z: 0}
 --- !u!50 &5226208042145413122
 Rigidbody2D:
   serializedVersion: 4
