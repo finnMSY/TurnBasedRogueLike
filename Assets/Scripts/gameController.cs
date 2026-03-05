@@ -100,7 +100,7 @@ public class gameController : MonoBehaviour
             
             currentEnemyIndex = 0;
             if (enemies.Count > 0) {
-                enemies[0].startTurn();
+                enemies[0]?.startTurn();
             } else {
                 EndOfRoom();
                 startPlayerTurn();
@@ -110,7 +110,7 @@ public class gameController : MonoBehaviour
             currentEnemyIndex++;
             
             if (currentEnemyIndex < enemies.Count) {
-                enemies[currentEnemyIndex].startTurn();
+                enemies[currentEnemyIndex]?.startTurn();
             } else {
                 startPlayerTurn();
             }

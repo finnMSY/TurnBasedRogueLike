@@ -36,7 +36,7 @@ public class Room
 public class roomController : MonoBehaviour
 {
     public GameObject doors;
-    public bool roomIsActive;
+    public bool roomIsActive = true;
     public GameObject cameraPoint;
     public Vector3Int startingTile;
     public GameObject enemies;
